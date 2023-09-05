@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+
+<head>
+    <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+    <title>Gridviz - example</title>
+</head>
+
+<body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
+    <div id="viz-container" style="height: 100%; width: 100%"></div>
+
+    <script src="../dist/gridviz.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gridviz-parquet"></script>
+    <script>
+        //https://www.npmjs.com/package/parquet-wasm
+        const rp = (async () => {
+            const parquetModule = await import(
+                'https://unpkg.com/parquet-wasm@0.4.0-beta.5/esm/arrow2.js'
+            )
+            await parquetModule.default()
+            return parquetModule.readParquet
+        })().then((readParquet) => {
+
+            //define app
+            let containerDiv = document.getElementById('viz-container')
+            const app = new gviz.App(containerDiv)
+                .setGeoCenter({ x: 2179500, y: 6783250 })
+                .setZoomFactor(500)
+                .setLabelLayer(gviz.getEuronymeLabelLayer('NO', '20'))
+                .setBoundaryLayer(gviz.getEurostatBoundariesLayer())
+                /*.addBackgroundLayer({
+                    url: 'https://raw.githubusercontent.com/jgaffuri/mbxyz/main/pub/elevation_shading/',
+                    resolutions: Array.from({ length: 9 }, (_, i) => 28.00132289714475 * Math.pow(2, 10 - i)),
+                    origin: [0, 6000000],
+                    filterColor: (zf) => '#ffffff60',
+                    minZoom: 50,
+                })*/
+
+
+            //define parquet dataset
+            const cleanCell = (c) => {
+                for (let k of Object.keys(c)) c[k] = +(c[k] + "")
+            };
+            const ds = gviz_par.makeMultiScaleTiledParquetGridDataset(
+                app,
+                [250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
+                (r) => 'https://raw.githubusercontent.com/jgaffuri/tiled-grid-norway/main/out/pop/' + r + 'm/',
+                {
+                    readParquetFun: readParquet,
+                    preprocess: (c) => { cleanCell(c) },
+                })
+
+
+            //add layer
+            app.addLayerFromDataset(
+                ds,
+                [
+                    new gviz.TimeSeriesStyle({
+                        ts: ["pop_2002", "pop_2004", "pop_2008", "pop_2010", "pop_2012", "pop_2014", "pop_2016", "pop_2018", "pop_2020", "pop_2022"],
+                        color: () => "black",
+                        lineWidthCol: "pop_2018",
+                        lineWidth: (v, r, s, z) => { return (1 + gviz.sPow(v / s.max, 0.4) * 7) * z },
+                        //offsetX: (c, r, z) => r / 2,
+                        //offsetY: (c, r, z) => r / 2,
+                        //width: (c, r, z) => 1.5*r,
+                        //height: (c, r, z) => 2*r,
+                        //anchorModeY: (c, r, z) => "first"
+                    })],
+                {
+                    pixNb: 15,
+                }
+            )
+
+        })
+    </script>
+</body>
+
+</html>

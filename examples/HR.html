@@ -29,8 +29,8 @@
                     <span style="font-size: 1.25em; font-weight: bold">Population</span><br />
                     <input type="radio" name="layer" id="pop" value="pop" checked />
                     <label for="pop">Total</label>
-                    <input type="radio" name="layer" id="popGender" value="popGender" />
-                    <label for="popGender">by gender</label>
+                    <input type="radio" name="layer" id="popSex" value="popSex" />
+                    <label for="popSex">by sex</label>
                     <input type="radio" name="layer" id="popAge" value="popAge" />
                     <label for="popAge">by age</label>
                     <br />
@@ -288,7 +288,7 @@
                             fun: (t, r, s) => s.max * gviz.sExpRevInverse(t, -7),
                         })
                     )
-                } else if (layCode === 'popGender') {
+                } else if (layCode === 'popSex') {
                     app.addLayerFromDataset(
                         ds.pop,
                         [

@@ -497,6 +497,7 @@ sha512-Ig1Qe8A0LuSgPWs1TsBVFTqRzgd9fe5BzwVLYuIGwETOpp3cvrZ3UJe93ty+BEVOZCKfKL/X4
         </div>
 
         <script src="../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-smoothing"></script>
         <script src="https://ec.europa.eu/assets/estat/E/E4/gisco/ure2023/d3-color.js"></script>
         <script src="https://ec.europa.eu/assets/estat/E/E4/gisco/ure2023/d3-interpolate.js"></script>
         <script src="https://ec.europa.eu/assets/estat/E/E4/gisco/ure2023/d3-scale-chromatic.js"></script>
@@ -917,7 +918,7 @@ sha512-Ig1Qe8A0LuSgPWs1TsBVFTqRzgd9fe5BzwVLYuIGwETOpp3cvrZ3UJe93ty+BEVOZCKfKL/X4
                     app.addLayerFromDataset(
                         popDataset,
                         [
-                            new gviz.KernelSmoothingStyle({
+                            new gviz_sm.KernelSmoothingStyle({
                                 value: (c) => +c[year],
                                 filter: (c) => +c[year] > 0,
                                 sigma: (r, zf) => (r * sigma) / 10,
@@ -983,7 +984,7 @@ sha512-Ig1Qe8A0LuSgPWs1TsBVFTqRzgd9fe5BzwVLYuIGwETOpp3cvrZ3UJe93ty+BEVOZCKfKL/X4
                         }),
 
                         /*[
-                        new gviz.KernelSmoothingStyle({
+                        new gviz_sm.KernelSmoothingStyle({
                             value: c => +c[year],
                             filter: c => +c[year] > 0,
                             factor: 10,
@@ -1087,7 +1088,7 @@ sha512-Ig1Qe8A0LuSgPWs1TsBVFTqRzgd9fe5BzwVLYuIGwETOpp3cvrZ3UJe93ty+BEVOZCKfKL/X4
                     app.addLayerFromDataset(
                         popDataset,
                         [
-                            new gviz.KernelSmoothingStyle({
+                            new gviz_sm.KernelSmoothingStyle({
                                 value: (c) => +c['d2011_2018'],
                                 sigma: (r, zf) => (r * sigma) / 10,
                                 factor: 2,

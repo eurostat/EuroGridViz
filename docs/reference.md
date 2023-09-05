@@ -2,52 +2,61 @@
 
 ## Table of contents
 
--   [Gridviz API reference](#gridviz-api-reference)
-    -   [Table of contents](#table-of-contents)
-    -   [Usage](#usage)
-    -   [App Configuration](#app-configuration)
-        -   [App options object](#app-options-object)
-    -   [Multi layer, multi style and multi scale mapping](#multi-layer-multi-style-and-multi-scale-mapping)
-    -   [Adding data](#adding-data)
-        -   [Single CSV file](#single-csv-file)
-        -   [Multi scale CSV data](#multi-scale-csv-data)
-        -   [Tiled data](#tiled-data)
-        -   [Multi scale tiled data](#multi-scale-tiled-data)
-        -   [Data pre-processing and filtering](#data-pre-processing-and-filtering)
-    -   [Basic styles](#basic-styles)
-        -   [Shape/Color/Size Style](#shapecolorsize-style)
-        -   [Square color WebGL Style](#square-color-webgl-style)
-        -   [Square color category WebGL style](#square-color-category-webgl-style)
-        -   [Composition style](#composition-style)
-        -   [Segment style](#segment-style)
-        -   [Stroke style](#stroke-style)
-    -   [Advanced styles](#advanced-styles)
-        -   [Tanaka style](#tanaka-style)
-        -   [Dot density style](#dot-density-style)
-        -   [Pillars style](#pillars-style)
-        -   [Text style](#text-style)
-    -   [Side styles](#side-styles)
-        -   [Side style](#side-style)
-        -   [Side category style](#side-category-style)
-        -   [Contour style](#contour-style)
-    -   [Esthetic styles](#esthetic-styles)
-        -   [JoyPlot Style](#joyplot-style)
-        -   [Mosaic style](#mosaic-style)
-        -   [Ninja star style](#ninja-star-style)
-        -   [Lego style](#lego-style)
-        -   [Lego category style](#lego-category-style)
-    -   [Kernel smoothing](#kernel-smoothing)
-    -   [Others styles](#others-styles)
-    -   [Legends](#legends)
-    -   [Stretching](#stretching)
-    -   [Background layer](#background-layer)
-        -   [Tiled layer](#tiled-layer)
-        -   [WMS](#wms)
-    -   [Foreground information](#foreground-information)
-        -   [Showing labels](#showing-labels)
-        -   [Showing boundaries](#showing-boundaries)
-    -   [Tooltip](#tooltip)
-    -   [Alright?](#alright)
+- [Gridviz API reference](#gridviz-api-reference)
+  - [Table of contents](#table-of-contents)
+  - [Usage](#usage)
+  - [App Configuration](#app-configuration)
+    - [App options object](#app-options-object)
+  - [Multi layer, multi style and multi scale mapping](#multi-layer-multi-style-and-multi-scale-mapping)
+  - [Adding data](#adding-data)
+    - [Single CSV file](#single-csv-file)
+    - [Multi scale CSV data](#multi-scale-csv-data)
+    - [Tiled data](#tiled-data)
+    - [Multi scale tiled data](#multi-scale-tiled-data)
+    - [Data pre-processing and filtering](#data-pre-processing-and-filtering)
+  - [Basic styles](#basic-styles)
+    - [Shape/Color/Size Style](#shapecolorsize-style)
+    - [Square color WebGL Style](#square-color-webgl-style)
+    - [Square color category WebGL style](#square-color-category-webgl-style)
+    - [Composition style](#composition-style)
+    - [Segment style](#segment-style)
+    - [Stroke style](#stroke-style)
+  - [Advanced styles](#advanced-styles)
+    - [Tanaka style](#tanaka-style)
+    - [Dot density style](#dot-density-style)
+    - [Pillars style](#pillars-style)
+    - [Text style](#text-style)
+    - [Time series style](#time-series-style)
+  - [Side styles](#side-styles)
+    - [Side style](#side-style)
+    - [Side category style](#side-category-style)
+    - [Contour style](#contour-style)
+  - [Esthetic styles](#esthetic-styles)
+    - [JoyPlot Style](#joyplot-style)
+    - [Mosaic style](#mosaic-style)
+    - [Ninja star style](#ninja-star-style)
+    - [Lego style](#lego-style)
+    - [Lego category style](#lego-category-style)
+  - [Kernel smoothing](#kernel-smoothing)
+  - [Others styles](#others-styles)
+  - [Legends](#legends)
+    - [ColorCategoryLegend](#colorcategorylegend)
+    - [ColorDiscreteLegend](#colordiscretelegend)
+    - [ColorLegend](#colorlegend)
+    - [SegmentOrientationLegend](#segmentorientationlegend)
+    - [SegmentWidthLegend](#segmentwidthlegend)
+    - [SizeLegend](#sizelegend)
+    - [Legend styling](#legend-styling)
+  - [Stretching](#stretching)
+  - [Background layer](#background-layer)
+    - [Tiled layer](#tiled-layer)
+    - [WMS](#wms)
+  - [Foreground information](#foreground-information)
+    - [Showing labels](#showing-labels)
+    - [Showing boundaries](#showing-boundaries)
+  - [Tooltip](#tooltip)
+  - [Leaflet](#leaflet)
+  - [Alright?](#alright)
 
 Anything unclear or missing? Feel free to [ask](https://github.com/eurostat/gridviz/issues/new) !
 
@@ -99,6 +108,7 @@ The following methods allow further configuration of a [Gridviz](https://github.
 | _app_.**addBackgroundLayer**([options])                                     | object                 |               | Add a background image layer, see [here](#background-layer).                                                                                                                                                           |
 | _app_.**setViewFromURL**()                                                  |                        |               | Set view geo center and zoom from URL parameters _x_, _y_ and _z_. For example, using the URL _myPage.html?x=1000&y=2000&z=45_ will force the viex to center to geographical coordinates _(1000, 2000)_ and zoom _45_. |
 | _app_.**redraw**()                                                          |                        |               | Force the map to redraw.                                                                                                                                                                                               |
+| _app_.**destroy**()                                                         |                        |               | Destroy the app, canvas, legend and tooltip and remove their event listeners.                                                                                                                                          |
 
 ### App options object
 
@@ -205,7 +215,7 @@ new gviz.App(containerDiv)
 
 ### Tiled data
 
-For large dataset, it is adviced to decompose them into different data chunks and index those by geographical location, as specified in the [tiled format](tiledformat.md). The [Gridviz](https://github.com/eurostat/gridviz/) application can then automatically retrieve only the usefull data that fall into the view geographical extent. This is an example of how to load such data:
+For large datasets, it is recommended that you decompose them into different data chunks and index them by geographical location, as specified in the [tiled format specification](tiledformat.md). The [Gridviz](https://github.com/eurostat/gridviz/) application can then automatically retrieve only the useful data that falls into the viewer's geographical extent. Here is an example of how to load such data:
 
 ```javascript
 new gviz.App(containerDiv)
@@ -369,9 +379,9 @@ See [this example with random shape, color and size](https://eurostat.github.io/
 See [this example with transparency](https://eurostat.github.io/gridviz/examples/styles/shapecolorsize_transparency.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/shapecolorsize_transparency.html)).
 
 | Property     | Type                      | Default                 | Description                                                                                                                           |
-| ------------ | ------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| ------------ | ------------------------- | ----------------------- | ----------------- |
 | **colorCol** | string                    | undefined               | The name of the column used for the color.                                                                                            |
-| **color**    | function(v,r,s):string    | (v,r,s,zf) => "#EA6BAC" | A function computing the cell color from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**. |
+| **color**    | function(v,r,s,zf):string    | (v,r,s,zf) => "#EA6BAC" | A function computing the cell color from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**. |
 | **sizeCol**  | string                    | undefined               | The name of the column used for the size.                                                                                             |
 | **size**     | function(v,r,s,zf):number | (v,r,s,zf) => r         | A function computing the cell size from its **sizeCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.   |
 | **shape**    | function(c):string        | () => "square"          | A function computing the shape of cell **c**. Expected values are within _{"square", "circle", "diamond", "donut", "none"}_           |
@@ -455,9 +465,9 @@ See [this example with random segment orientation, color, length and width](http
 | **colorCol**    | string                    | undefined       | The name of the column used for the color.                                                                                  |
 | **color**       | function(v,r,s):string    | () => "#EA6BAC" | A function computing the cell color from its **colorCol** value **v**, the resolution **r**, and statistics **s**.          |
 | **lengthCol**   | string                    | undefined       | The name of the column used for the segment length.                                                                         |
-| **length**      | function(v,r,s,zf):number | (v,r,s,zf) => r | A function computing the segment length from its **lengthCol** value **v**, the resolution **r**, statistics **s** and zoom |
+| **length**      | function(v,r,s,zf):number | (v,r,s,zf) => r | A function computing the segment length from its **lengthCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**. |
 | **widthCol**    | string                    | undefined       | The name of the column used for the segment width.                                                                          |
-| **width**       | function(v,r,s,zf):number | (v,r,s,zf) => r | A function computing the segment width from its **widthCol** value **v**, the resolution **r**, statistics **s** and zoom   |
+| **width**       | function(v,r,s,zf):number | (v,r,s,zf) => r | A function computing the segment width from its **widthCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.   |
 
 ### Stroke style
 
@@ -563,9 +573,9 @@ See [this basic example](https://eurostat.github.io/gridviz/examples/styles/text
 
 See [this example](https://eurostat.github.io/gridviz/examples/styles/text.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/text.html)).
 
-| Property        | Type                      | Default                  | Description                                                                                                                                                   |
-| --------------- | ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **textCol**     | string                    | undefined                | The name of the column/attribute of the tabular data where to retrieve the variable for text.                                                                 |
+| Property        | Type                      | Default                  | Description              |
+| --------------- | ------------------------- | ------------------------ | ------------------------------------ |
+| **textCol**     | string          | undefined                | The name of the column/attribute of the tabular data where to retrieve the variable for text.        |
 | **text**        | function(v,r,s,zf):string | (v, r, s, z) => "X"      | A function returning the text of a cell from its **textCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.                      |
 | **colorCol**    | string                    | undefined                | The name of the column/attribute of the tabular data where to retrieve the variable for color.                                                                |
 | **color**       | function(v,r,s,zf):string | () => "#EA6BAC"          | A function returning the color of the cell from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.                  |
@@ -573,6 +583,29 @@ See [this example](https://eurostat.github.io/gridviz/examples/styles/text.html)
 | **fontSize**    | function(v,r,s,zf):number | (v, r, s, z) => r \* 0.8 | A function returning the font size of a cell in geo unit from its **fontSizeCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**. |
 | **fontFamily**  | string                    | "Arial"                  | The text font family.                                                                                                                                         |
 | **fontWeight**  | string                    | "bold"                   | The text font weight.                                                                                                                                         |
+
+### Time series style
+
+[![time series style](img/styles/timeseries.png)](https://eurostat.github.io/gridviz/examples/styles/time_series.html)
+
+This style shows the grid cells as a time series chart. It is particulary suitable to show data that has high temporal granularity and low geographical granurality (variation across time rather than space). The time series charts can be colored and sized according to other variables.
+
+See [this basic example](https://eurostat.github.io/gridviz/examples/styles/time_series.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/time_series.html)).
+
+
+| Property        | Type                      | Default                  | Description              |
+| --------------- | ------------------------- | ------------------------ | ------------------------------------ |
+| **ts**     | Array(string)          | undefined       | The columns of the time series, ordered in chronological order. Note that the style currently requires full time series, without missing data.  |
+| **offsetX**     | function(c,r,zf):string         | ()=>0         | A fonction computing the offset along X axis, in geographical unit, from origin point (lower left cell corner). This value is computed from the cell **c**, resolution **r** and zoom factor **zf**.   |
+| **width**     | function(c,r,zf):string          | ()=>r        | A fonction computing the chart width, in geographical unit. This value is computed from the cell **c**, resolution **r** and zoom factor **zf**.  |
+| **offsetY**     | function(c,r,zf):string          | ()=>0     | Same as **offsetX** but along Y axis.     |
+| **height**     | function(c,r,zf):string          | ()=>r  | Same as **width**, but for the chart height.  |
+| **anchorModeY**     | function(c,r,zf):string  | (c, r, zf) => "center"     | The anchor mode along Y axis: *first* to anchor to the first value, *last* for the last, *bottom* to anchor the minimum value to the bottom, *top* to anchor the maximum value to the top, *center* to center the chart along Y axis.  |
+| **lineWidthCol**     | string  | undefined    | The name of the column used for the line width.  |
+| **lineWidth**     | string   | (v, r, s, z) => 1.5 * z   | A function computing the cell chart line width in geographical unit from its **sizeCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.  |
+| **colorCol**     | string  | undefined    | The name of the column used for the color. |
+| **color**     | string  | (v, r, s, zf) => 'black'       | A function computing the cell chart color from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.  |
+
 
 ## Side styles
 
@@ -718,6 +751,8 @@ See [this other example](https://eurostat.github.io/gridviz/examples/styles/lego
 
 This style allows applying a gaussian kernel smoothing to the input grid. Other styles can then be used on the smoothed grid - this style is thus more a 'filter' than a proper style.
 
+Note that this style is available within the [gridviz-smoothing](https://github.com/eurostat/gridviz-smoothing) extension which need to be added as: `<script src="https://cdn.jsdelivr.net/npm/gridviz-smoothing"></script>`.
+
 See [this elementary example](https://eurostat.github.io/gridviz/examples/styles/kernelsmoothing_small.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/kernelsmoothing_small.html)).
 
 See [this example](https://eurostat.github.io/gridviz/examples/styles/kernelsmoothing.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/kernelsmoothing.html)).
@@ -741,7 +776,126 @@ Any need or idea for new style ? feel free to [ask](https://github.com/eurostat/
 
 ## Legends
 
-Documentation coming soon.
+Gridviz offers different types of legends that are suited to different cartographic styles, namely:
+
+-   [ColorCategoryLegend](#colorcategorylegend)
+-   [ColorDiscreteLegend](#colordiscretelegend)
+-   [ColorLegend](#colorLegend)
+-   [SegmentOrientationLegend](#segmentorientationlegend)
+-   [SegmentWidthLegend](#segmentwidthlegend)
+-   [SizeLegend](#sizelegend)
+
+The legends are appended to the div element specified in the `legendDivId` property in the [App options object](#app-options-object). If this is not specified then gridviz will generate one automatically.
+
+Each layer style can have an array of legends.
+
+To add a legend, simply push it to the corresponding legends array of that style, for example:
+
+```javascript
+app.layers[0].styles[0].legends.push(
+    new gviz.SizeLegend({
+        title: 'Number of inhabitants',
+        exaggerationFactor: 0.8,
+        shape: 'circle',
+        fillColor: '#e54f37',
+    })
+)
+```
+
+For styling legends see [Legend Styling](#legend-styling).
+
+### ColorCategoryLegend
+
+![](img/legends/color_category_legend.png)
+
+```javascript
+new gviz.ColorCategoryLegend({
+    title: 'Dominant leaf type',
+    colCat: [
+        ['#c6df58', 'None'],
+        ['#9fd045', 'Mainly broadleaved'],
+        ['#38a43b', 'Mainly coniferous'],
+    ],
+    shape: 'square',
+})
+```
+
+### ColorDiscreteLegend
+
+![](img/legends/color_discrete_legend.png)
+
+```javascript
+new gviz.ColorDiscreteLegend({
+    title: 'Travel time to nearest health service, in minutes',
+    colors: ['#FDFECC', '#B2E3AA', '#6AC5A4', '#4FA1A2', '#427C9A', '#3E5791', '#3D3562', '#281A2C'],
+    breaksText: [5, 10, 15, 20, 30, 45, 60, 90],
+    width: 300,
+})
+```
+
+### ColorLegend
+
+![](img/legends/color_legend.png)
+
+```javascript
+new gviz.ColorLegend({
+    title: 'Number of inhabitants',
+    width: 400,
+    ticks: 5,
+    colorRamp: d3.interpolateOrRd,
+    fun: (t, r, s) => s.max * gviz.sExpRevInverse(t, -7),
+})
+```
+
+### SegmentOrientationLegend
+
+![](img/legends/segment_orientation_legend.png)
+
+```javascript
+new gviz.SegmentOrientationLegend({
+    title: 'Population change',
+    labelUnitText: 'Strong increase',
+    color: '#d13c4b',
+    orientation: 60,
+})
+```
+
+### SegmentWidthLegend
+
+![](img/legends/segment_width_legend.png)
+
+```javascript
+new gviz.SegmentWidthLegend({
+    title: 'Population in 2018',
+    labelUnitText: 'inhab.',
+})
+```
+
+### SizeLegend
+
+![](img/legends/size_legend.png)
+
+```javascript
+new gviz.SizeLegend({
+    title: 'Number of inhabitants',
+    exaggerationFactor: 0.8,
+    shape: 'circle',
+    fillColor: '#e54f37',
+})
+```
+
+### Legend styling
+
+You can style each legend by using the 'D3-like' style() function after constructing your legend, like so:
+
+```javascript
+new gviz.SizeLegend({
+    title: 'Number of inhabitants',
+    exaggerationFactor: 0.8,
+    shape: 'circle',
+    fillColor: '#3E5791',
+}).style('padding', '0px 5px')
+```
 
 ## Stretching
 
@@ -967,24 +1121,50 @@ By default, the **cellInfoHTML** function is a function returning a list of all 
 
 You can adjust the tooltip settings by specifying a tooltip object in the [app options](#app-options-object), using the following properties:
 
-| Property                      | Type   | Default                        | Description                                                                           |
-| ----------------------------- | ------ | ------------------------------ | ------------------------------------------------------------------------------------- |
-| _opts_.**div**                | String | 'tooltip_eurostat'             | Specify the div id to use as a tooltip. If unspecified, one is created automatically. |
-| _opts_.**transitionDuration** | string | 100                            | The duration in ms of the tooltip transition animation.                               |
-| _opts_.**xOffset**            | number | 30                             | The X offset to apply to the position of the tooltip container.                       |
-| _opts_.**yOffset**            | number | 20                             | The Y offset to apply to the position of the tooltip container.                       |
-| _opts_.**xMouseOffset**       | number | 0                              | The X offset to apply to the position of the mouse when hovering a cell.              |
-| _opts_.**yMouseOffset**       | number | 0                              | The Y offset to apply to the position of the mouse when hovering a cell.              |
-| _opts_.**maxWidth**           | string | 20em                           | The max width of the tooltip.                                                         |
-| _opts_.**fontSize**           | string | 1.2em                          | The tooltip font size.                                                                |
-| _opts_.**background**         | string | 'white'                        | The background color of the tooltip                                                   |
-| _opts_.**padding**            | string | '5px'                          | The tooltip padding.                                                                  |
-| _opts_.**border**             | string | '0px'                          | The tooltip border CSS property.                                                      |
-| _opts_.**border-radius**      | string | '5px'                          | The tooltip border-radius.                                                            |
-| _opts_.**box-shadow**         | string | '5px 5px 5px grey'             | The tooltip box-shadow.                                                               |
-| _opts_.**font-family**        | string | 'Helvetica, Arial, sans-serif' | The tooltip font-family.                                                              |
+| Property                      | Type        | Default                        | Description                                                                           |
+| ----------------------------- | ----------- | ------------------------------ | ------------------------------------------------------------------------------------- |
+| _opts_.**div**                | String      | 'tooltip_eurostat'             | Specify the div id to use as a tooltip. If unspecified, one is created automatically. |
+| _opts_.**parentElement**      | HTMLelement | document.body                  | Specify the HTML element to which the tooltip will be appended                        |
+| _opts_.**transitionDuration** | string      | 100                            | The duration in ms of the tooltip transition animation.                               |
+| _opts_.**xOffset**            | number      | 30                             | The X offset to apply to the position of the tooltip container.                       |
+| _opts_.**yOffset**            | number      | 20                             | The Y offset to apply to the position of the tooltip container.                       |
+| _opts_.**xMouseOffset**       | number      | 0                              | The X offset to apply to the position of the mouse when hovering a cell.              |
+| _opts_.**yMouseOffset**       | number      | 0                              | The Y offset to apply to the position of the mouse when hovering a cell.              |
+| _opts_.**maxWidth**           | string      | 20em                           | The max width of the tooltip.                                                         |
+| _opts_.**fontSize**           | string      | 1.2em                          | The tooltip font size.                                                                |
+| _opts_.**background**         | string      | 'white'                        | The background color of the tooltip                                                   |
+| _opts_.**padding**            | string      | '5px'                          | The tooltip padding.                                                                  |
+| _opts_.**border**             | string      | '0px'                          | The tooltip border CSS property.                                                      |
+| _opts_.**border-radius**      | string      | '5px'                          | The tooltip border-radius.                                                            |
+| _opts_.**box-shadow**         | string      | '5px 5px 5px grey'             | The tooltip box-shadow.                                                               |
+| _opts_.**font-family**        | string      | 'Helvetica, Arial, sans-serif' | The tooltip font-family.                                                              |
 
 For more information, [see the code](../src/Tooltip.js).
+
+## Leaflet
+
+Gridviz can be used with leaflet by using the [leaflet-gridviz plugin](https://github.com/eurostat/leaflet-gridviz)
+
+Usage:
+
+```javascript
+// import leaflet-gridviz after importing leaflet
+;<script src="https://www.unpkg.com/leaflet-gridviz"></script>
+
+// create your leaflet map
+let map = new L.Map('map', {
+    center: ['50.00754', '19.98211'],
+})
+
+// define your leaflet-gridviz layer
+let gridvizLayer = new L.GridvizLayer(AppOptions)
+
+// add it to the map
+gridvizLayer.addTo(map)
+
+//then customize it as you wish by using the gridviz app attached to our GridvizLayer...
+gridvizLayer.app.addMultiScaleTiledGridLayer(etc)
+```
 
 ## Alright?
 

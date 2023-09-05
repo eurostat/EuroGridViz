@@ -71,6 +71,12 @@
                 origin: [0, 6000000],
                 filterColor: (zf) => '#ffffffc8',
             })
+
+
+            setTimeout(()=>{
+                app.setGeoCenter({ x: 3526953, y: 2226791 })
+                app.cg.redraw()
+            }, 2000)
         </script>
     </body>
 </html>

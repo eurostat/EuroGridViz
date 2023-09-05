@@ -33,6 +33,7 @@
 ## Examples
 
 -   [Europe - 1km resolution - GEOSTAT/GISCO](https://eurostat.github.io/gridviz/examples/EUR.html)
+-   [Germany - 100m resolution - Zensus 2011](https://eurostat.github.io/gridviz/examples/DE.html)
 -   [France - 200m resolution - INSEE Filosofi](https://eurostat.github.io/gridviz/examples/FR.html)
 -   [Croatia - 1km resolution - DZS 2015 grid](https://eurostat.github.io/gridviz/examples/HR.html)
 -   [France population, dark style](https://eurostat.github.io/gridviz/examples/styles/squarecolorwgl_dark.html)

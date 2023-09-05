@@ -85,7 +85,8 @@ export class NinjaStarStyle extends Style {
             const sG2 = s_(cell[this.sizeCol], r, statSize, zf) * r2
 
             //get offset
-            const offset = this.offset(cell, r, zf)
+            //TODO use
+            //const offset = this.offset(cell, r, zf)
 
             //center position
             const cx = cell.x + r2

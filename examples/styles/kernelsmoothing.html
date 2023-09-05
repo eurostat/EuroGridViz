@@ -35,6 +35,7 @@
         </div>
 
         <script src="../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-smoothing"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
@@ -55,7 +56,7 @@
                     r +
                     'm/',
                 [
-                    new gviz.KernelSmoothingStyle({
+                    new gviz_sm.KernelSmoothingStyle({
                         value: (c) => +c['2018'],
                         filterSm: (v) => v > 0.001,
                     }),

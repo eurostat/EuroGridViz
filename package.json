@@ -1,6 +1,6 @@
 {
     "name": "gridviz",
-    "version": "2.0.38",
+    "version": "2.0.51",
     "description": "Visualization tool for gridded statistics",
     "keywords": [
         "statistics",
@@ -14,7 +14,9 @@
         "WebGL",
         "d3",
         "cartography",
-        "bertin"
+        "bertin",
+        "geospatial",
+        "mapping"
     ],
     "homepage": "https://github.com/eurostat/gridviz",
     "author": "Joseph Davies, Julien Gaffuri",
@@ -47,15 +49,13 @@
         "src/**/*.js"
     ],
     "dependencies": {
-        "apache-arrow": "^10.0.1",
         "d3-color": "^3.1.0",
         "d3-fetch": "^3.0.1",
         "d3-format": "^3.1.0",
         "d3-geo": "^3.0.1",
         "d3-random": "^3.0.1",
         "d3-selection": "^3.0.0",
-        "d3-zoom": "^3.0.0",
-        "fast-kde": "^0.2.1"
+        "d3-zoom": "^3.0.0"
     },
     "devDependencies": {
         "@babel/core": "^7.9.0",

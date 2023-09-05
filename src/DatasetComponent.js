@@ -1,8 +1,6 @@
 //@ts-check
 'use strict'
 
-/** @typedef {"CSV"|"PARQUET"} Format */
-
 /**
  * A dataset component, of grid cells.
  * @abstract

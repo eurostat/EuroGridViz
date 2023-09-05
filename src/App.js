@@ -7,7 +7,6 @@ import { Layer } from './Layer.js'
 import { Dataset } from './Dataset.js'
 import { Tooltip } from './Tooltip.js'
 import { CSVGrid } from './dataset/CSVGrid.js'
-//import { ParquetGrid } from './dataset/ParquetGrid';
 import { TiledGrid } from './dataset/TiledGrid.js'
 import { BackgroundLayer } from './BackgroundLayer.js'
 import { BackgroundLayerWMS } from './BackgroundLayerWMS.js'
@@ -38,17 +37,17 @@ export class App {
         this.layers = []
 
         //get container element
-        container = container || document.getElementById('gridviz')
-        if (!container) {
+        this.container = container || document.getElementById('gridviz')
+        if (!this.container) {
             console.error('Cannot find gridviz container element.')
             return
         }
 
         //set dimensions
         /** @type {number} */
-        this.w = opts.w || container.offsetWidth
+        this.w = opts.w || this.container.offsetWidth
         /** @type {number} */
-        this.h = opts.h || container.offsetHeight
+        this.h = opts.h || this.container.offsetHeight
 
         //create canvas element if user doesnt specify one
         /** @type {HTMLCanvasElement} */
@@ -57,7 +56,7 @@ export class App {
             canvas = document.createElement('canvas')
             canvas.setAttribute('width', '' + this.w)
             canvas.setAttribute('height', '' + this.h)
-            container.appendChild(canvas)
+            this.container.appendChild(canvas)
         }
 
         /** Make geo canvas
@@ -79,15 +78,16 @@ export class App {
             this.updateExtentGeo()
 
             //go through the background layers
-            for (const layer of this.bgLayers) {
-                //check if layer is visible
-                if (!layer.visible) continue
-                if (zf > layer.maxZoom) continue
-                if (zf < layer.minZoom) continue
+            if (this.showBgLayers)
+                for (const layer of this.bgLayers) {
+                    //check if layer is visible
+                    if (!layer.visible) continue
+                    if (zf > layer.maxZoom) continue
+                    if (zf < layer.minZoom) continue
 
-                //draw layer
-                layer.draw(this.cg)
-            }
+                    //draw layer
+                    layer.draw(this.cg)
+                }
 
             //go through the layers
             for (const layer of this.layers) {
@@ -110,16 +110,28 @@ export class App {
                 //update dataset view cache
                 if (strong) dsc.updateViewCache(this.cg.extGeo)
 
+                //set layer alpha and blend mode
+                this.cg.ctx.globalAlpha = layer.alpha ? layer.alpha(zf) : 1.0
+                this.cg.ctx.globalCompositeOperation = layer.blendOperation(zf)
+
                 //draw cells, style by style
                 if (strong)
                     for (const s of layer.styles) {
+                        //check if style is visible
+                        if (!s.visible) continue
                         if (zf > s.maxZoom) continue
                         if (zf < s.minZoom) continue
+
+                        //set style alpha and blend mode
+                        //TODO: multiply by layer alpha ?
+                        this.cg.ctx.globalAlpha = s.alpha ? s.alpha(zf) : 1.0
+                        this.cg.ctx.globalCompositeOperation = s.blendOperation(zf)
+
                         s.draw(dsc.getViewCache(), dsc.getResolution(), this.cg)
                     }
 
                 //add legend element
-                if (this.legend && strong)
+                if (this.legend && strong) {
                     for (const s of layer.styles) {
                         if (zf > s.maxZoom) continue
                         if (zf < s.minZoom) continue
@@ -145,6 +157,11 @@ export class App {
                             }
                         }
                     }
+                }
+
+                //restore default alpha and blend operation
+                this.cg.ctx.globalAlpha = 1.0
+                this.cg.ctx.globalCompositeOperation = "normal"
             }
 
             //draw boundary layer
@@ -161,7 +178,7 @@ export class App {
             if (monitor) monitorDuration('End redraw')
 
             // listen for resize events on the App's container and handle them
-            this.defineResizeObserver(container, canvas)
+            this.defineResizeObserver(this.container, canvas)
 
             return this
         }
@@ -186,7 +203,9 @@ export class App {
         this.legendDivId = opts.legendDivId || 'gvizLegend'
         this.legend = select('#' + this.legendDivId)
         if (this.legend.empty()) {
-            this.legend = select('#' + container.id)
+            this.legend = select(
+                this.container.id && this.container.id != '' ? '#' + this.container.id : 'body'
+            )
                 .append('div')
                 .attr('id', this.legendDivId)
                 .style('position', 'absolute')
@@ -208,7 +227,7 @@ export class App {
 
         // set App container as default parent element for tooltip
         if (!opts.tooltip) opts.tooltip = {}
-        if (!opts.tooltip.parentElement) opts.tooltip.parentElement = container
+        if (!opts.tooltip.parentElement) opts.tooltip.parentElement = this.container
 
         /**
          * @private
@@ -278,15 +297,14 @@ export class App {
                 if (this.canvasSave) this.cg.ctx.drawImage(this.canvasSave, 0, 0)
             }
         }
-        container.addEventListener('mouseover', (e) => {
-            focusCell(e)
-        })
-        container.addEventListener('mousemove', (e) => {
-            focusCell(e)
-        })
-        container.addEventListener('mouseout', () => {
-            this.tooltip.hide()
-        })
+
+        // add event listeners to container
+        this.mouseOverHandler = (e) => focusCell(e)
+        this.mouseMoveHandler = (e) => focusCell(e)
+        this.mouseOutHandler = (e) => this.tooltip.hide()
+        this.container.addEventListener('mouseover', this.mouseOverHandler)
+        this.container.addEventListener('mousemove', this.mouseMoveHandler)
+        this.container.addEventListener('mouseout', this.mouseOutHandler)
 
         // add extra logic to onZoomStartFun
         this.cg.onZoomStartFun = (e) => {
@@ -451,18 +469,6 @@ export class App {
     }
 
     /**
-     * Make a parquet grid dataset.
-     *
-     * @param {string} url The URL of the dataset.
-     * @param {number} resolution The dataset resolution in geographical unit.
-     * @param {object=} opts The parameters of the dataset.
-     * @returns {Dataset}
-     */
-    /*makeParquetGridDataset(url, resolution, opts) {
-        return new Dataset([new ParquetGrid(url, resolution, opts).getData(undefined, () => { this.cg.redraw(); })], [], opts)
-    }*/
-
-    /**
      * Make a tiled grid dataset.
      *
      * @param {string} url
@@ -482,22 +488,6 @@ export class App {
     }
 
     //multi scale dataset creation
-
-    /**
-     * Make a multi scale parquet grid dataset.
-     *
-     * @param {Array.<number>} resolutions
-     * @param {function(number):string} resToURL
-     * @param {{preprocess?:function(import('./Dataset').Cell):boolean}} opts
-     * @returns {Dataset}
-     */
-    /*makeMultiScaleParquetGridDataset(resolutions, resToURL, opts) {
-        return Dataset.make(
-            resolutions,
-            (res) => new ParquetGrid(resToURL(res), res, opts).getData(undefined, () => { this.cg.redraw(); }),
-            opts
-        )
-    }*/
 
     /**
      * Make a multi scale CSV grid dataset.
@@ -556,20 +546,6 @@ export class App {
     }
 
     /**
-     * Add a layer from a parquet grid dataset.
-     *
-     * @param {string} url The URL of the dataset.
-     * @param {number} resolution The dataset resolution in geographical unit.
-     * @param {Array.<import('./Style').Style>} styles The styles, ordered in drawing order.
-     * @param {object=} opts The parameters of the dataset and layer.
-     * @returns {this}
-     */
-    /*addParquetGridLayer(url, resolution, styles, opts) {
-        const ds = this.makeParquetGridDataset(url, resolution, opts)
-        return this.addLayerFromDataset(ds, styles, opts);
-    }*/
-
-    /**
      *
      * @param {string} url
      * @param {Array.<import('./Style').Style>} styles
@@ -594,20 +570,6 @@ export class App {
         const ds = this.makeMultiScaleCSVGridDataset(resolutions, resToURL, opts)
         return this.addLayerFromDataset(ds, styles, opts)
     }
-
-    /**
-     * Add a layer from a parquet grid dataset.
-     *
-     * @param {Array.<number>} resolutions
-     * @param {function(number):string} resToURL
-     * @param {Array.<import('./Style').Style>} styles The styles, ordered in drawing order.
-     * @param {object=} opts The parameters of the dataset and layer.
-     * @returns {this}
-     */
-    /*addMultiScaleParquetGridLayer(resolutions, resToURL, styles, opts) {
-        const ds = this.makeMultiScaleParquetGridDataset(resolutions, resToURL, opts)
-        return this.addLayerFromDataset(ds, styles, opts);
-    }*/
 
     /**
      * @param {Array.<number>} resolutions
@@ -694,5 +656,30 @@ export class App {
         })
 
         resizeObserver.observe(container)
+    }
+
+    /**
+     * @description Destroy the app and it's event listeners
+     * This should significantly reduce the memory used when creating and destroying gridviz app instances (for example in leaflet-gridviz)
+     * @memberof App
+     */
+    destroy() {
+        // clear layers
+        this.layers = []
+        this.bgLayers = []
+
+        // remove event listeners from container
+        this.container.removeEventListener('mouseover', this.mouseOverHandler)
+        this.container.removeEventListener('mousemove', this.mouseMoveHandler)
+        this.container.removeEventListener('mouseout', this.mouseOutHandler)
+
+        // remove canvas
+        this.cg.canvas.remove()
+
+        // remove legend
+        this.legend?.remove()
+
+        // remove tooltip
+        this.tooltip.tooltip?.remove()
     }
 }

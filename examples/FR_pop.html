@@ -104,6 +104,7 @@
         </div>
 
         <script src="../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-smoothing"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
@@ -365,7 +366,7 @@
                     app.addLayerFromDataset(
                         popDataset,
                         [
-                            new gviz.KernelSmoothingStyle({
+                            new gviz_sm.KernelSmoothingStyle({
                                 value: (c) => +c[year],
                                 filter: (c) => +c[year] > 0,
                                 sigma: (r, zf) => (r * sigma) / 10,
@@ -431,7 +432,7 @@
                         }),
 
                         /*[
-            new gviz.KernelSmoothingStyle({
+            new gviz_sm.KernelSmoothingStyle({
                 value: c => +c[year],
                 filter: c => +c[year] > 0,
                 factor: 10,
@@ -535,7 +536,7 @@
                     app.addLayerFromDataset(
                         popDataset,
                         [
-                            new gviz.KernelSmoothingStyle({
+                            new gviz_sm.KernelSmoothingStyle({
                                 value: (c) => +c.d2015_2017,
                                 sigma: (r, zf) => (r * sigma) / 10,
                                 factor: 2,

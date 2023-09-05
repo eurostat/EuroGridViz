@@ -17,7 +17,7 @@
 export class Style {
     /**
      * @abstract
-     * @param {{filter?:function(import('./Dataset').Cell):boolean,offset?:function(import('./Dataset').Cell,number,number):{dx:number,dy:number},minZoom?:number,maxZoom?:number}} opts
+     * @param {{filter?:function(import('./Dataset').Cell):boolean,offset?:function(import('./Dataset').Cell,number,number):{dx:number,dy:number},visible?:boolean,alpha?:function(number):number,blendOperation?:function(number):GlobalCompositeOperation,minZoom?:number,maxZoom?:number}} opts
      *      minZoom: The minimum zoom level when to show the layer. maxZoom: The maximum zoom level when to show the layer
      */
     constructor(opts) {
@@ -32,6 +32,21 @@ export class Style {
          * @protected
          * @type {function(import('./Dataset').Cell,number,number):{dx:number,dy:number}} */
         this.offset = opts.offset || ((c, r, zf) => ({ dx: 0, dy: 0 }))
+
+        /** An attribute to specify if a style should be drawn or not
+         * @type {boolean} */
+        this.visible = opts.visible === false ? false : true
+
+        /** A function returning the alpha (transparency/opacity), between 0.0 (fully transparent) and 1.0 (fully opaque).
+         *  The function parameter is the zoom factor.
+         * (see CanvasRenderingContext2D: globalAlpha property)
+         * @type {function(number):number|undefined} */
+        this.alpha = opts.alpha
+
+        /** A function returning the blend operation. The function parameter is the zoom factor.
+         * (see CanvasRenderingContext2D: globalCompositeOperation property)
+         * @type {function(number):GlobalCompositeOperation} */
+        this.blendOperation = opts.blendOperation || (zf => 'normal')
 
         /** The minimum zoom factor: Below this level, the layer is not shown.
          * @type {number}

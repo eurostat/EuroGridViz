@@ -11,8 +11,8 @@ export { DatasetComponent } from './DatasetComponent.js'
 
 // export dataset types
 export { TiledGrid } from './dataset/TiledGrid.js'
+export { GridTile } from './dataset/GridTile.js'
 export { CSVGrid } from './dataset/CSVGrid.js'
-//export { ParquetGrid } from "./dataset/ParquetGrid"
 //export { GeoTIFF } from "./dataset/GeoTIFF"
 
 // export styles
@@ -22,9 +22,6 @@ export { JoyPlotStyle } from './style/JoyPlotStyle.js'
 export { CompositionStyle } from './style/CompositionStyle.js'
 export { SegmentStyle } from './style/SegmentStyle.js'
 export { TextStyle } from './style/TextStyle.js'
-export { KernelSmoothingStyle } from './style/KernelSmoothingStyle.js'
-//export { KernelSmoothingOldStyle } from "./style/KernelSmoothingStyle"
-//export { KernelSmoothingWGLStyle } from "./style/KernelSmoothingStyle"
 export { PillarStyle } from './style/PillarStyle.js'
 export { SideStyle } from './style/SideStyle.js'
 export { ContourStyle } from './style/ContourStyle.js'
@@ -36,6 +33,7 @@ export { SquareColorWGLStyle } from './style/SquareColorWGLStyle.js'
 export { SquareColorCatWGLStyle } from './style/SquareColorCatWGLStyle.js'
 export { MosaicStyle } from './style/MosaicStyle.js'
 export { NinjaStarStyle } from './style/NinjaStarStyle.js'
+export { TimeSeriesStyle } from './style/TimeSeriesStyle.js'
 
 // export additional layers
 export { BackgroundLayer } from './BackgroundLayer.js'
@@ -55,6 +53,9 @@ export { SegmentOrientationLegend } from './legend/SegmentOrientationLegend.js'
 export * from './utils/stretching.js'
 
 export { getClass } from './utils/Utils.js'
+
+
+
 
 import { GeoCanvas } from './GeoCanvas.js'
 import { geoAzimuthalEqualArea } from 'd3-geo'

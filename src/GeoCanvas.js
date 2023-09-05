@@ -215,6 +215,7 @@ export class GeoCanvas {
             this.canvasSave.dx -= dxGeo / this.getZf()
             this.canvasSave.dy += dyGeo / this.getZf()
             this.clear(this.backgroundColor)
+            // this doesnt work on mobile https://github.com/eurostat/gridviz/issues/98
             this.ctx.drawImage(this.canvasSave.c, this.canvasSave.dx, this.canvasSave.dy)
         }
     }

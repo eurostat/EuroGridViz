@@ -48,11 +48,15 @@ export class Tooltip {
         this.parentElement = opts.parentElement || document.body
 
         /**
-         * @private
+         * @public
          * @type {import("d3-selection").Selection} */
         this.tooltip = select('#' + this.div)
         if (this.tooltip.empty())
-            this.tooltip = select('#' + this.parentElement.id)
+            this.tooltip = select(
+                '#' + this.parentElement.id && this.parentElement.id != ''
+                    ? '#' + this.parentElement.id
+                    : 'body'
+            )
                 .append('div')
                 .attr('id', this.div)
 

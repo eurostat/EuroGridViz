@@ -1,31 +1,21 @@
-
-
-https://gis.stackexchange.com/questions/132242/what-are-the-differences-between-tms-xyz-wmts
-
-WMS
-
-https://sgx.geodatenzentrum.de/wms_basemapde?&service=WMS&request=GetCapabilities
-https://sgx.geodatenzentrum.de/wms_basemapde?&service=WMS&request=GetMap&layers=de_basemapde_web_raster_grau&styles=&format=image%2Fjpeg&transparent=false&version=1.1.1&width=256&height=256&srs=EPSG%3A3035&bbox=
-https://sgx.geodatenzentrum.de/wms_basemapde?&service=WMS&request=GetMap&layers=de_basemapde_web_raster_grau&styles=&format=image%2Fjpeg&transparent=false&version=1.1.1&width=256&height=256&srs=EPSG%3A3035&bbox=4198656.00000592,2939904.000260939,4207104.000005504,2948352.0002606986
-
-https://wahlatlas.net/experimente/z11exposee/gridviz/basic.html
+Document alpha/blendoperation
+transparency/blending for layer, styles and all layers (background, etc.)
+//normal | multiply | screen | overlay | darken | lighten | color-dodge | color-burn | hard-light | soft-light | difference | exclusion | hue | saturation | color | luminosity
 
 
 
-WMTS
+module parquet
+parquet: monitor, improve
+parquet: make wasm import easier and wasm file smaller (https://github.com/kylebarron/parquet-wasm#custom-builds)
 
-https://gist.github.com/tmcw/4954720
-
-
-
-
-
-module test
-
-V3
-make modules
 see https://webpack.js.org/guides/code-splitting/
 webpack: check plugins https://webpack.js.org/plugins
+
+
+climate/weather
+https://www.worldclim.org/data/monthlywth.html
+https://chelsa-climate.org/
+https://prism.oregonstate.edu/
 
 
 https://www.svgrepo.com/
@@ -42,14 +32,8 @@ https://www.dafont.com/isotype.font
 https://fontmeme.com/fonts/isotype-font/
 
 
-publish and document tiler
-
 lego shading
 
-
-module parquet
-parquet: monitor, improve
-parquet: make wasm import easier and wasm file smaller (https://github.com/kylebarron/parquet-wasm#custom-builds)
 
 See https://kgolid.github.io/chromotome-site/
 
@@ -210,10 +194,8 @@ copernicus global land cover: https://land.copernicus.eu/global/products/lc
 
 
 TODO test gridded datasets:
-DE: https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html
 NL: https://www.cbs.nl/nl-nl/dossier/nederland-regionaal/geografische-data/kaart-van-100-meter-bij-100-meter-met-statistieken
 World: https://wopr.worldpop.org/?NGA/Population/v2.0
-HR: https://geostat.dzs.hr/?lang=en   1km. toutirsm, education, businesses, etc. Request sent.
 AT: https://www.statistik.at/atlas/?mapid=them_bevoelkerung_bevoelkerungsstand&layerid=layer1&sublayerid=sublayer0&languageid=1
 https://www.statistik.at/en/services/tools/services/regional-information/regional-statistics
 250m population by year... not free. free: 10km sample. Citizenship/origin

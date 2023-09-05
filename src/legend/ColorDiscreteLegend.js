@@ -1,9 +1,7 @@
 //@ts-check
 'use strict'
 
-//import { select } from "d3-selection";
 import { Legend } from '../Legend.js'
-//import { format } from "d3-format";
 
 /**
  * A legend element for discrete color style.

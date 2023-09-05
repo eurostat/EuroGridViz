@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+
+<head>
+    <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+    <title>Gridviz - example</title>
+</head>
+
+<body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
+    <div id="viz-container" style="height: 100%; width: 100%"></div>
+
+    <script src="../../dist/gridviz.js"></script>
+    <script>
+        let containerDiv = document.getElementById('viz-container')
+
+        new gviz.App(containerDiv)
+            //set position and zoom
+            .setGeoCenter({ x: 4500000, y: 2900000 })
+            .setZoomFactor(30)
+            //add multi scale tiled layer
+            .addMultiScaleTiledGridLayer(
+                //the resolution values, ordered
+                [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+                //the URL, from the resolution
+                (r) =>
+                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
+                    r +
+                    'm/',
+                //the styles
+                [
+                    new gviz.TimeSeriesStyle({
+                        ts: ["TOT_P_2006", "TOT_P_2011", "TOT_P_2018", "TOT_P_2021"],
+                        color: () => "black",
+                        lineWidthCol: "TOT_P_2021",
+                        lineWidth: (v, r, s, z) => { return (1 + gviz.sPow(v / s.max, 0.4) * 7) * z },
+                        //offsetX: (c, r, z) => r / 2,
+                        //offsetY: (c, r, z) => r / 2,
+                        //width: (c, r, z) => 1.5*r,
+                        //height: (c, r, z) => 2*r,
+                        //anchorModeY: (c, r, z) => "first"
+                    })],
+                {
+                    //the maximum pixel size before jumping to a lower resolution
+                    pixNb: 10,
+                }
+            )
+    </script>
+</body>
+
+</html>

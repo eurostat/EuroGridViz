@@ -18,7 +18,7 @@ export class TextStyle extends Style {
         this.textCol = opts.textCol
 
         /** A function returning the text of a cell.
-         * @type {function(number,number,import("../Style").Stat|undefined):string} */
+         * @type {function(number,number,import("../Style").Stat|undefined,number):string} */
         this.text = opts.text || ((v, r, s, z) => 'X')
 
         /** The name of the column/attribute of the tabular data where to retrieve the variable for color.
@@ -26,7 +26,7 @@ export class TextStyle extends Style {
         this.colorCol = opts.colorCol
 
         /** A function returning the color of the cell.
-         * @type {function(number,number,import("../Style").Stat|undefined):string} */
+         * @type {function(number,number,import("../Style").Stat|undefined,number):string} */
         this.color = opts.color || (() => '#EA6BAC')
 
         /** The name of the column/attribute of the tabular data where to retrieve the variable for font size.
@@ -86,11 +86,11 @@ export class TextStyle extends Style {
 
         for (let cell of cells) {
             //get cell text
-            const text = this.text ? this.text(cell[this.textCol], r, statText) : undefined
+            const text = this.text ? this.text(cell[this.textCol], r, statText, zf) : undefined
             if (text == undefined || text == null || text + '' === '') continue
 
             //color
-            const col = this.color ? this.color(cell[this.colorCol], r, statColor) : undefined
+            const col = this.color ? this.color(cell[this.colorCol], r, statColor, zf) : undefined
             if (!col) continue
             cg.ctx.fillStyle = col
 

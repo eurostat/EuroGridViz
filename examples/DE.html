@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+
+<head>
+    <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+    <title></title>
+</head>
+
+<body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
+    <div id="viz-container" style="height: 100%; width: 100%"></div>
+
+    <div style="
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        width: auto;
+        height: auto;
+        padding: 10px;
+        border: 0px;
+        border-radius: 5px;
+        background: #ffffffcc;
+        line-height: 1.6;
+        box-shadow: 5px 5px 5px grey;
+    ">
+        <span style="font-size: 1.8em; font-weight: bold">Germany</span>
+        <span style="font-size: 1.25em">
+            <div id="layer">
+                <input type="radio" name="layer" id="pop" value="pop" checked />
+                <label for="pop">Total population</label>
+                <br />
+                <input type="radio" name="layer" id="popSex" value="popSex" />
+                <label for="popSex">By sex</label>
+                <br />
+                <input type="radio" name="layer" id="popMarital" value="popMarital" />
+                <label for="popMarital">By marital status</label>
+                <br />
+                <input type="radio" name="layer" id="popAge" value="popAge" />
+                <label for="popAge">By age</label> <input type="radio" name="layer" id="ageR" value="ageR" />
+                <label for="ageR">Age balance</label>
+                <br />
+                <input type="radio" name="layer" id="popCoB" value="popCoB" />
+                <label for="popCoB">By birth place</label>
+                <input type="radio" name="layer" id="popCit" value="popCit" />
+                <label for="popCit">or citizenship</label> (<input type="checkbox" id="popCoBCitCB" checked />
+                <label for="popCoBCitCB">size by population</label>)
+                <br />
+                <input type="radio" name="layer" id="popRelig" value="popRelig" />
+                <label for="popRelig">By religion</label> (<input type="checkbox" id="popReligCB" />
+                <label for="popReligCB">size by population</label>)
+            </div>
+            <hr />
+            <input type="checkbox" id="label" checked />
+            <label for="label">City names</label>
+            <input type="checkbox" id="boundary" checked />
+            <label for="boundary">Boundaries</label>
+            <input type="checkbox" id="background" checked />
+            <label for="background">Background</label>
+            <hr />
+            Source:
+            <a href="https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html?nn=559100#Gitter"
+                style="text-decoration: none">Statistisches Bundesamt, Wiesbaden 2018</a>
+        </span>
+    </div>
+
+    <script src="../dist/gridviz.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gridviz-parquet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-format@3"></script>
+    <script>
+
+        //https://www.npmjs.com/package/parquet-wasm
+        const rp = (async () => {
+            const parquetModule = await import(
+                'https://unpkg.com/parquet-wasm@0.4.0-beta.5/esm/arrow2.js'
+            )
+            await parquetModule.default()
+            return parquetModule.readParquet
+        })().then((readParquet) => {
+            let containerDiv = document.getElementById('viz-container')
+
+            const app = new gviz.App(containerDiv)
+                .setGeoCenter({ x: 4301000, y: 3050000 })
+                .setZoomFactor(400)
+                .setLabelLayer(gviz.getEuronymeLabelLayer('DE', '20'))
+                .setBoundaryLayer(gviz.getEurostatBoundariesLayer())
+                .addBackgroundLayerWMS({
+                    url: 'https://sgx.geodatenzentrum.de/wms_basemapde?&service=WMS&request=GetMap&layers=de_basemapde_web_raster_grau&styles=&format=image%2Fjpeg&transparent=false&version=1.1.1&srs=EPSG%3A3035',
+                    maxZoom: 50,
+                })
+                .addBackgroundLayer({
+                    url: 'https://raw.githubusercontent.com/jgaffuri/mbxyz/main/pub/elevation_shading/',
+                    resolutions: Array.from({ length: 9 }, (_, i) => 28.00132289714475 * Math.pow(2, 10 - i)),
+                    origin: [0, 6000000],
+                    filterColor: (zf) => '#ffffff60',
+                    minZoom: 50,
+                })
+
+            //prepare datasets, indexed by thematic domain and year
+            const ds = {};
+            const baseURL = 'https://raw.githubusercontent.com/jgaffuri/tiled-grid-germany-zensus2011/main/out/';
+
+            const cleanCell = (c) => {
+                for (let k of Object.keys(c)) c[k] = +(c[k] + "")
+            };
+
+            //create demography (population only) dataset
+            ds.demo_pop = gviz_par.makeMultiScaleTiledParquetGridDataset(
+                app,
+                [100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000],
+                (res) => baseURL + 'demo_pop/' + res + 'm/',
+                {
+                    readParquetFun: readParquet,
+                    preprocess: (c) => { cleanCell(c) },
+                })
+
+            //create demography full dataset
+            ds.demo = gviz_par.makeMultiScaleTiledParquetGridDataset(
+                app,
+                [100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000],
+                (res) => baseURL + 'demo/' + res + 'm/',
+                {
+                    readParquetFun: readParquet,
+                    preprocess: (c) => {
+                        cleanCell(c)
+
+                        //sex
+                        c.DIFF_MEN_WOMEN = +c.GESCHLECHT_1 - c.GESCHLECHT_2
+                        c.DIFF_MEN_WOMEN = (100 * c.DIFF_MEN_WOMEN) / c.INSGESAMT_0
+                        if (isNaN(c.DIFF_MEN_WOMEN)) c.DIFF_MEN_WOMEN = 0
+
+                        //marital status
+                        c.FAMSTND_AUSF_S = c.FAMSTND_AUSF_1
+                        c.FAMSTND_AUSF_M = c.FAMSTND_AUSF_2 + c.FAMSTND_AUSF_5
+                        c.FAMSTND_AUSF_D = c.FAMSTND_AUSF_4 + c.FAMSTND_AUSF_7
+                        c.FAMSTND_AUSF_W = c.FAMSTND_AUSF_3 + c.FAMSTND_AUSF_6
+                        c.FAMSTND_AUSF_ND = c.FAMSTND_AUSF_8
+
+                        //age ratio
+                        //<29
+                        c.yyy = +c.ALTER_KURZ_1 + c.ALTER_KURZ_2
+                        //>50
+                        c.ooo = +c.ALTER_KURZ_4 + c.ALTER_KURZ_5
+                        c.age_ratio = c.yyy + c.ooo == 0 ? 0 : (c.yyy - c.ooo) / (c.yyy + c.ooo)
+                        c.age_ratio = c.age_ratio * 0.5 + 0.5
+
+                        //STAATSANGE_HLND Citizenship by selected countries
+                        //1 Germany
+                        //2 Bosnia and Herzegovina
+                        //3 Greece
+                        //4 Italy
+                        //5 Kazakhstan
+                        //6 Croatia
+                        //7 Netherlands
+                        //8 Austria
+                        //9 Poland
+                        //10 Romania
+                        //11 Russian Federation
+                        //12 Turkey
+                        //13 Ukraine
+                        //14 Other
+                    },
+                })
+
+
+            //
+            const update = () => {
+                //read GUI selection
+                const layCode = document.querySelector('input[name="layer"]:checked').value
+
+                //remove layers
+                app.layers = []
+
+                //formater
+                //const f1 = d3.format('.1f')
+
+                //set layer
+                if (layCode === 'pop') {
+                    app.addLayerFromDataset(
+                        ds.demo_pop,
+                        [
+                            new gviz.SquareColorWGLStyle({
+                                colorCol: 'pop',
+                                color: d3.interpolateYlOrRd,
+                                stretching: { fun: 'expRev', alpha: -7 },
+                                //set alpha and blend operation
+                                //alpha: (zf) => zf < 70 ? 0.75 : 1.0,
+                                blendOperation: (zf) => zf < 10 ? "multiply" : "normal"
+                            }),
+                            new gviz.StrokeStyle({ maxZoom: 7 }),
+                        ],
+                        {
+                            pixNb: 1.5,
+                            cellInfoHTML: (c) => '<b>' + c.pop + '</b> person' + (+c.pop == 1 ? '' : 's')
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: "Population",
+                            colorRamp: d3.interpolateYlOrRd,
+                            fun: (t, r, s) => s.max * gviz.sExpRevInverse(t, -7),
+                        })
+                    )
+                } else if (layCode === 'popSex') {
+                    app.addLayerFromDataset(
+                        ds.demo,
+                        [
+                            new gviz.ShapeColorSizeStyle({
+                                colorCol: 'DIFF_MEN_WOMEN',
+                                color: (v, r, s) => {
+                                    console.log(v + "")
+                                    const max = Math.max(Math.abs(s.min), Math.abs(s.max))
+                                    const t = (Math.sign(v) * gviz.sPow(Math.abs(v) / max, 0.2)) / 2 + 0.5
+                                    return d3.interpolateSpectral(1 - t)
+                                },
+                                shape: () => 'circle',
+                                sizeCol: 'INSGESAMT_0',
+                                size: (v, r, s, zf) => 1.3 * r * gviz.sPow(v / s.max, 0.2),
+                                blendOperation: (zf) => zf < 4 ? "multiply" : "normal"
+                            }),
+                        ],
+                        {
+                            pixNb: 8,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c.INSGESAMT_0 +
+                                    '</b> inhabitants<br>' +
+                                    c.GESCHLECHT_1 +
+                                    ' men<br>' +
+                                    c.GESCHLECHT_2 +
+                                    ' women<br>Difference: <b>' +
+                                    (c.DIFF_MEN_WOMEN > 0 ? '+' : '') +
+                                    d3.format('.1f')(c.DIFF_MEN_WOMEN) +
+                                    ' % men</b>'
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({ shape: 'circle', labelUnitText: 'inhab.', fillColor: '#ccc' })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: 'Men / women difference (%)',
+                            ticks: 7,
+                            tickFormat: '.1f',
+                            colorRamp: d3.interpolateSpectral,
+                            invert: true,
+                            fun: (t, r, s) => {
+                                const max = Math.max(Math.abs(s.min), Math.abs(s.max))
+                                return (t < 0.5 ? -1 : 1) * max * gviz.sPow(Math.abs(2 * t - 1), 1 / 0.2)
+                            },
+                        })
+                    )
+                } else if (layCode === 'popMarital') {
+                    //population by marital status
+                    /*
+                                        FAMSTND_AUSF
+                    S 1 Single
+                    M 2 Married 5 Party to a civil union
+                    D 4 Divorced (including annulled marriages) 7 Civil union annulled
+                    W 3 Widowed 6 Civil partner deceased (including “civil union dissolved by death” and “civil union dissolved by declaration of death”)
+                    ND 8 No data
+                    */
+
+                    app.addLayerFromDataset(
+                        ds.demo,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    FAMSTND_AUSF_S: "#33a02c", //green
+                                    FAMSTND_AUSF_M: "#e31a1c", //red
+                                    FAMSTND_AUSF_D: "#1f78b4", //blue,
+                                    FAMSTND_AUSF_W: "#6a3d9a", //purple
+                                    FAMSTND_AUSF_ND: "#ddd", //gray
+                                },
+                                type: () => 'segment', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                                sizeCol: 'INSGESAMT_0',
+                                size: (v, r, s, zf) => 1 * r * gviz.sPow(v / s.max, 0.25, 0),
+                                stripesOrientation: () => 90,
+                                //agePyramidHeight: (c, r) => 0.95 * r,
+                                blendOperation: (zf) => zf < 6 ? "multiply" : "normal"
+                            }),
+                        ],
+                        {
+                            pixNb: 10,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                c.INSGESAMT_0 +
+                                '</b> person' +
+                                (+c.INSGESAMT_0 == 1 ? '' : 's') +
+                                '<br>' +
+                                'By marital status:<br>' +
+                                'Single: ' +
+                                (c.FAMSTND_AUSF_S) +
+                                '<br>' +
+                                'Married / civil union: ' +
+                                (c.FAMSTND_AUSF_M) +
+                                '<br>' +
+                                'Divorced / annulled: ' +
+                                (c.FAMSTND_AUSF_D) +
+                                '<br>' +
+                                'Widowed / partner deceased: ' +
+                                (c.FAMSTND_AUSF_W) +
+                                '<br>' +
+                                'No data: ' +
+                                (c.FAMSTND_AUSF_ND),
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({
+                            shape: 'square',
+                            labelUnitText: 'people',
+                            fillColor: '#ccc',
+                            //exaggerationFactor: 0.05,
+                        })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Marital status',
+                            colCat: [
+                                ["#33a02c", "Single"],
+                                ["#e31a1c", "Married / civil union"],
+                                ["#1f78b4", "Divorced / annulled"],
+                                ["#6a3d9a", "Widowed / partner deceased"],
+                                ["#ddd", "No data"],
+                            ],//.reverse(),
+                        })
+                    )
+                } else if (layCode === 'popAge') {
+                    /*population by age (5 age groups)  ALTER_KURZ   1 Under 18     2 18 - 29    3 30 - 49    4 50 - 64   5 65 and over */
+
+                    const col = d3.interpolateSpectral
+
+                    app.addLayerFromDataset(
+                        ds.demo,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    ALTER_KURZ_1: col(0.1),
+                                    ALTER_KURZ_2: col(0.3),
+                                    ALTER_KURZ_3: col(0.5),
+                                    ALTER_KURZ_4: col(0.7),
+                                    ALTER_KURZ_5: col(0.9),
+                                },
+                                type: () => 'flag', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                                sizeCol: 'INSGESAMT_0',
+                                size: (v, r, s, zf) => r * gviz.sPow(v / s.max, 0.25, 0),
+                                stripesOrientation: () => 90,
+                                //agePyramidHeight: (c, r) => 0.95 * r,
+                                blendOperation: (zf) => zf < 4 ? "multiply" : "normal"
+                            }),
+                        ],
+                        {
+                            pixNb: 14,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                c.INSGESAMT_0 +
+                                '</b> person' +
+                                (+c.INSGESAMT_0 == 1 ? '' : 's') +
+                                '<br>' +
+                                'By age:<br>' +
+                                ' < 18 : ' +
+                                (c.ALTER_KURZ_1) +
+                                '<br>' +
+                                ' 18-29 : ' +
+                                (c.ALTER_KURZ_2) +
+                                '<br>' +
+                                ' 30-49 : ' +
+                                (c.ALTER_KURZ_3) +
+                                '<br>' +
+                                ' 50-64 : ' +
+                                (c.ALTER_KURZ_4) +
+                                '<br>' +
+                                ' > 64: ' +
+                                (c.ALTER_KURZ_5),
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({
+                            shape: 'square',
+                            labelUnitText: 'people',
+                            fillColor: '#ccc',
+                            //exaggerationFactor: 0.05,
+                        })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Age',
+                            colCat: [
+                                [col(0.1), '< 18'],
+                                [col(0.3), '18-29'],
+                                [col(0.5), '30-49'],
+                                [col(0.7), '50-64'],
+                                [col(0.9), ' > 64'],
+                            ].reverse(),
+                        })
+                    )
+                } else if (layCode === 'ageR') {
+                    //young VS elderly
+                    app.addLayerFromDataset(
+                        ds.demo,
+                        [
+                            new gviz.ShapeColorSizeStyle({
+                                sizeCol: 'INSGESAMT_0',
+                                size: (v, r, s, zf) => 1.4 * r * Math.pow(v / s.max, 0.2),
+                                colorCol: 'age_ratio',
+                                color: (v, r, s) => d3.interpolateSpectral(1 - v),
+                                shape: () => 'circle',
+                                blendOperation: (zf) => zf < 4 ? "multiply" : "normal"
+                            }),
+                        ],
+                        {
+                            pixNb: 7,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                (c.yyy) +
+                                '</b> person(s) aged 29 or younger' +
+                                '<br>' +
+                                '<b>' +
+                                (c.ooo) +
+                                '</b> person(s) aged 50 or elder'
+                            //+ "<br>" + "(Balance: " + (Math.round(c.age_ratio * 100)) + "%)"
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({
+                            shape: 'circle',
+                            labelUnitText: 'people',
+                            fillColor: '#ccc',
+                        })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: 'Balance young/old',
+                            ticks: 2,
+                            tickFormat: 'text',
+                            colorRamp: d3.interpolateSpectral,
+                            fun: (t, r, s) => (t == 0 ? 'Younger' : t == 0.5 ? 'Balanced' : 'Elder'),
+                        })
+                    )
+                } else if (layCode === 'popCoB') {
+                    //population by country of birth
+
+                    //GEBURTLAND_GRP
+                    //1 Germany
+                    //21 EU27
+                    //22 Rest of Europe
+                    //23 Rest of the world
+                    //24 Other
+
+                    const sized = document.querySelector('#popCoBCitCB').checked
+
+                    app.addLayerFromDataset(
+                        ds.demo,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    GEBURTLAND_GRP_1: "#fed9a6", //light mostard
+                                    GEBURTLAND_GRP_21: "#7570b3", //blueish
+                                    GEBURTLAND_GRP_22: "#1b9e77", //greenish,
+                                    GEBURTLAND_GRP_23: "#d95f02", //orange
+                                    GEBURTLAND_GRP_24: "#ddd", //gray
+                                },
+                                type: sized ? () => 'halftone' : () => 'flag', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                                sizeCol: 'INSGESAMT_0',
+                                size: sized ? (v, r, s, zf) => 1.2 * r * gviz.sPow(v / s.max, 0.25, 0) : undefined,
+                                stripesOrientation: sized ? undefined : () => 90,
+                                //agePyramidHeight: (c, r) => 0.95 * r,
+                                blendOperation: sized ? undefined : (zf) => zf < 6 ? "multiply" : "normal"
+                            }),
+                        ],
+                        {
+                            pixNb: sized ? 22 : 5,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                c.INSGESAMT_0 +
+                                '</b> person' +
+                                (+c.INSGESAMT_0 == 1 ? '' : 's') +
+                                '<br>' +
+                                'By birth place:<br>' +
+                                'Germany: ' +
+                                (c.GEBURTLAND_GRP_1) +
+                                '<br>' +
+                                'European union: ' +
+                                (c.GEBURTLAND_GRP_21) +
+                                '<br>' +
+                                'Rest of Europe: ' +
+                                (c.GEBURTLAND_GRP_22) +
+                                '<br>' +
+                                'Rest of the world: ' +
+                                (c.GEBURTLAND_GRP_23) +
+                                '<br>' +
+                                'Other: ' +
+                                (c.GEBURTLAND_GRP_24),
+                        }
+                    )
+                    //legend
+                    if (sized)
+                        app.layers[0].styles[0].legends.push(
+                            new gviz.SizeLegend({
+                                shape: 'circle',
+                                labelUnitText: 'people',
+                                fillColor: '#ccc',
+                                exaggerationFactor: 0.05,
+                            })
+                        )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Birth place',
+                            colCat: [
+                                ["#fed9a6", "Germany"],
+                                ["#7570b3", "European union"],
+                                ["#1b9e77", "Rest of Europe"],
+                                ["#d95f02", "Rest of the world"],
+                                ["#ddd", "Other"],
+                            ],//.reverse(),
+                        })
+                    )
+
+                } else if (layCode === 'popCit') {
+                    //population by citizenship
+                    //STAATSANGE_GRP
+
+                    const sized = document.querySelector('#popCoBCitCB').checked
+
+                    app.addLayerFromDataset(
+                        ds.demo,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    STAATSANGE_GRP_1: "#fed9a6", //light mostard
+                                    STAATSANGE_GRP_21: "#7570b3", //blueish
+                                    STAATSANGE_GRP_22: "#1b9e77", //greenish,
+                                    STAATSANGE_GRP_23: "#d95f02", //orange
+                                    STAATSANGE_GRP_24: "#ddd", //gray
+                                },
+                                type: sized ? () => 'halftone' : () => 'flag', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                                sizeCol: 'INSGESAMT_0',
+                                size: sized ? (v, r, s, zf) => 1.2 * r * gviz.sPow(v / s.max, 0.25, 0) : undefined,
+                                stripesOrientation: sized ? undefined : () => 90,
+                                //agePyramidHeight: (c, r) => 0.95 * r,
+                                blendOperation: sized ? undefined : (zf) => zf < 6 ? "multiply" : "normal"
+                            }),
+                        ],
+                        {
+                            pixNb: sized ? 22 : 5,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                c.INSGESAMT_0 +
+                                '</b> person' +
+                                (+c.INSGESAMT_0 == 1 ? '' : 's') +
+                                '<br>' +
+                                'By citizenship:<br>' +
+                                'Germany: ' +
+                                (c.STAATSANGE_GRP_1) +
+                                '<br>' +
+                                'European union: ' +
+                                (c.STAATSANGE_GRP_21) +
+                                '<br>' +
+                                'Rest of Europe: ' +
+                                (c.STAATSANGE_GRP_22) +
+                                '<br>' +
+                                'Rest of the world: ' +
+                                (c.STAATSANGE_GRP_23) +
+                                '<br>' +
+                                'Other: ' +
+                                (c.STAATSANGE_GRP_24),
+                        }
+                    )
+                    //legend
+                    if (sized)
+                        app.layers[0].styles[0].legends.push(
+                            new gviz.SizeLegend({
+                                shape: 'circle',
+                                labelUnitText: 'people',
+                                fillColor: '#ccc',
+                                exaggerationFactor: 0.05,
+                            })
+                        )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Citizenship',
+                            colCat: [
+                                ["#fed9a6", "Germany"],
+                                ["#7570b3", "European union"],
+                                ["#1b9e77", "Rest of Europe"],
+                                ["#d95f02", "Rest of the world"],
+                                ["#ddd", "Other"],
+                            ],//.reverse(),
+                        })
+                    )
+                } else if (layCode === 'popRelig') {
+                    //population by religion
+                    //RELIGION_KURZ
+                    //1 Roman Catholic
+                    //2 Evangelical Church
+                    //3 Other, none, no data
+
+                    const sized = document.querySelector('#popReligCB').checked
+
+                    app.addLayerFromDataset(
+                        ds.demo,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    RELIGION_KURZ_1: "#7570b3", //blueish
+                                    RELIGION_KURZ_2: "#1b9e77", //greenish,
+                                    RELIGION_KURZ_3: "#e6ab02", //light mostard
+                                },
+                                type: () => 'segment', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                                sizeCol: 'INSGESAMT_0',
+                                size: sized ? (v, r, s, zf) => 1 * r * gviz.sPow(v / s.max, 0.25, 0) : undefined,
+                                stripesOrientation: () => 90,
+                                //agePyramidHeight: (c, r) => 0.95 * r,
+                                //blendOperation: (zf) => zf < 4 ? "multiply" : "normal"
+                            }),
+                        ],
+                        {
+                            pixNb: sized ? 10 : 4,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                c.INSGESAMT_0 +
+                                '</b> person' +
+                                (+c.INSGESAMT_0 == 1 ? '' : 's') +
+                                '<br>' +
+                                'By religion:<br>' +
+                                'Roman catholic: ' +
+                                (c.RELIGION_KURZ_1) +
+                                '<br>' +
+                                'Evangelical church: ' +
+                                (c.RELIGION_KURZ_2) +
+                                '<br>' +
+                                'Other, none, no data: ' +
+                                (c.RELIGION_KURZ_3),
+                        }
+                    )
+                    //legend
+                    if (sized)
+                        app.layers[0].styles[0].legends.push(
+                            new gviz.SizeLegend({
+                                shape: 'square',
+                                labelUnitText: 'people',
+                                fillColor: '#ccc',
+                                exaggerationFactor: 0.05,
+                            })
+                        )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Religion',
+                            colCat: [
+                                ["#7570b3", "Roman catholic"],
+                                ["#1b9e77", "Evangelical church"],
+                                ["#e6ab02", "Other, none, no data"],
+                            ],//.reverse(),
+                        })
+                    )
+
+                } else console.error('Unexpected layer code: ' + layCode)
+
+                //redraw
+                app.cg.redraw()
+            }
+
+            //layer update
+            document.querySelector('#layer').addEventListener('change', update)
+
+            // show/hide labels
+            document.querySelector('#label').addEventListener('change', function () {
+                app.showLabels = this.checked
+                app.cg.redraw()
+            })
+
+            // show/hide boundaries
+            document.querySelector('#boundary').addEventListener('change', function () {
+                app.showBoundaries = this.checked
+                app.cg.redraw()
+            })
+
+            // show/hide background layer
+            document.querySelector('#background').addEventListener('change', function () {
+                app.showBgLayers = this.checked
+                app.cg.redraw()
+            })
+
+            //select layer from URL
+            const ls = gviz.getParameterByName('lay')
+            if (ls) {
+                const b = document.querySelector('#' + ls)
+                if (b) b.checked = true
+            }
+
+            //initialise
+            update()
+
+        })
+
+
+    </script>
+
+    <div style="
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    width: auto;
+    height: auto;
+    padding: 1px;
+    border: 0px;
+    background: #ffffffcc;
+">
+        <span style="font-size: 0.8em">
+            <a href="https://github.com/eurostat/gridviz" style="text-decoration: none">GridViz</a> | ©<a
+                href="https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html?nn=559100#Gitter"
+                style="text-decoration: none">Statistisches Bundesamt,
+                Wiesbaden 2018</a> |
+            ©<a href="https://eurogeographics.org" style="text-decoration: none">EuroGeographics</a></span>
+    </div>
+
+
+</body>
+
+</html>
