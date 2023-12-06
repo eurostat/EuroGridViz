@@ -21,16 +21,20 @@ export class SegmentWidthLegend extends Legend {
         this.titleFontWeight = opts.titleFontWeight || 'bold'
 
         //exageration
+        //if set to 1, the segment width in the legend will be the one of the maximum width on the map
         this.exaggerationFactor = opts.exaggerationFactor || 0.5
 
-        //color
+        //color of the segment in the legend
         this.color = opts.color || 'gray'
-        //orientation
+        //orientation of the segment in the legend
         this.orientation = opts.orientation || 0
 
         //label
         this.labelFontSize = opts.labelFontSize || '0.8em'
         this.labelUnitText = opts.labelUnitText || ''
+
+        //segment length in geo unit - a function of the resolution r and zoom level zf
+        this.lengthFun = opts.lengthExaggerationFactor || ((r, zf) => r)
     }
 
     /**
@@ -54,10 +58,9 @@ export class SegmentWidthLegend extends Legend {
                 .text(this.title)
         }
 
-        //get max value
+        //get segment max value
         const value_ = opts.sWidth.max * this.exaggerationFactor
-
-        //take 'nice' value (power of ten, or multiple)
+        //make 'nice' value (power of ten, or multiple)
         let pow10 = Math.log10(value_)
         pow10 = Math.floor(pow10)
         let value = Math.pow(10, pow10)
@@ -67,10 +70,11 @@ export class SegmentWidthLegend extends Legend {
         else if (value * 4 <= value_) value *= 4
         else if (value * 2.5 <= value_) value *= 2.5
         else if (value * 2 <= value_) value *= 2
+        else if (value * 1.5 <= value_) value *= 1.5
 
         //compute segment width and length, in pix
-        const sWidth = opts.style.width(value, opts.r, opts.sWidth, opts.zf) / opts.zf
-        const sLength = (1 * opts.r) / opts.zf
+        const sWidth = opts.widthFun(value, opts.r, opts.sWidth, opts.zf) / opts.zf
+        const sLength = this.lengthFun(opts.r, opts.zf) / opts.zf
 
         //TODO use orientation
 

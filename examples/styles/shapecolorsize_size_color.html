@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" style="height: 100%">
-    <head>
-        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-        <title>Gridviz - Shape/color/size style</title>
-    </head>
 
-    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-        <div
-            style="
+<head>
+    <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+    <title>Gridviz - Shape/color/size style</title>
+</head>
+
+<body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
+    <div style="
                 position: absolute;
                 left: 20px;
                 top: 20px;
@@ -19,81 +19,74 @@
                 background: #ffffffcc;
                 line-height: 1.6;
                 box-shadow: 5px 5px 5px grey;
-            "
-        >
-            <select id="shape" style="font-size: 1.5em">
-                <option value="circle" selected>Circle</option>
-                <option value="square">Square</option>
-                <option value="donut">Donut</option>
-            </select>
-        </div>
+            ">
+        <select id="shape" style="font-size: 1.5em">
+            <option value="circle" selected>Circle</option>
+            <option value="square">Square</option>
+            <option value="diamond">Diamond</option>
+            <option value="donut">Donut</option>
+        </select>
+    </div>
 
-        <div id="viz-container" style="height: 100%; width: 100%"></div>
+    <div id="viz-container" style="height: 100%; width: 100%"></div>
 
-        <script src="../../dist/gridviz.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
-        <script>
-            let containerDiv = document.getElementById('viz-container')
+    <script src="../../dist/gridviz.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+    <script>
+        let containerDiv = document.getElementById('viz-container')
 
-            const app = new gviz.App(containerDiv, {
-                transparentBackground: false,
-                tooltip: {
-                    yMouseOffset: -5,
-                    xMouseOffset: -5,
-                },
-            })
-                .setGeoCenter({ x: 3763437, y: 2891045 })
-                .setZoomFactor(50.1)
-                .setZoomFactorExtent([7, 2000])
-                .addMultiScaleTiledGridLayer(
-                    [200, 400, 1000, 2000, 5000, 10000, 20000, 50000],
-                    (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/france/filosofi/ind/2017/' +
-                        r +
-                        'm/',
-                    [
-                        new gviz.ShapeColorSizeStyle({
-                            sizeCol: 'Ind',
-                            size: (v, r, s, zf) => 1.4 * r * gviz.sPow(v / s.max, 0.13),
-                            colorCol: 'age_ratio',
-                            color: (v, r, s) => d3.interpolateSpectral(1 - v),
-                            shape: () => 'circle',
-                        }),
-                    ],
-                    {
-                        pixNb: 6,
-                        preprocess: (c) => {
-                            //<24
-                            const yyy = +c.Ind_0_3 + +c.Ind_4_5 + +c.Ind_6_10 + +c.Ind_11_17 + +c.Ind_18_24
-                            //>65
-                            const ooo = +c.Ind_65_79 + +c.Ind_80p
-                            c.age_ratio = yyy + ooo == 0 ? 0 : (yyy - ooo) / (yyy + ooo)
-                            c.age_ratio = c.age_ratio * 0.5 + 0.5
+        const app = new gviz.App(containerDiv)
+            .setGeoCenter({ x: 3763437, y: 2891045 })
+            .setZoomFactor(50.1)
+            .setZoomFactorExtent([7, 2000])
+            .addMultiScaleTiledGridLayer(
+                [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
+                (r) =>
+                    'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/inc/2019/' +
+                    r +
+                    'm/',
+                [
+                    new gviz.ShapeColorSizeStyle({
+                        sizeCol: 'ind',
+                        size: (v, r, s, zf) => r * gviz.sPow(v / s.max, 0.13),
+                        colorCol: 'revind',
+                        color: (v, r, s) => {
+                            let t = (v - 1200) / (3700 - 1200)
+                            t = t > 1 ? 1 : t < 0 ? 0 : t
+                            return d3.interpolateSpectral(1 - t)
                         },
-                    }
-                )
+                    }),
+                ],
+                {
+                    pixNb: 6,
+                    preprocess: (c) => {
+                        c.revind = Math.round(c.ind_snv / c.ind / 12)
+                    },
+                }
+            )
 
-            //type selection
-            const s = app.layers[0].styles[0]
-            document.getElementById('shape').addEventListener('change', function () {
-                const v_ = this.value
+        //shape selection
+        const s = app.layers[0].styles[0]
+        document.getElementById('shape').addEventListener('change', function () {
+            const v_ = this.value
 
-                //set shape
-                s.shape = () => v_
+            //set shape
+            s.shape = () => v_
 
-                //set size
-                s.size = (v, r, s, zf) =>
-                    v_ === 'circle'
-                        ? 1.4 * r * gviz.sPow(v / s.max, 0.13)
-                        : v_ === 'square'
+            //set size
+            s.size = (v, r, s, zf) =>
+                (v_ === 'circle' || v_ === 'diamond')
+                    ? 1.4 * r * gviz.sPow(v / s.max, 0.13)
+                    : v_ === 'square'
                         ? r * gviz.sPow(v / s.max, 0.1)
                         : r * gviz.sPow(v / s.max, 0.2)
 
-                //redraw
-                app.cg.redraw()
-            })
-        </script>
-    </body>
+            //redraw
+            app.cg.redraw()
+        })
+    </script>
+</body>
+
 </html>

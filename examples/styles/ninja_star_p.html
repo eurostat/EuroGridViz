@@ -28,14 +28,14 @@
             .setZoomFactor(50.1)
             .setZoomFactorExtent([7, 2000])
             .addMultiScaleTiledGridLayer(
-                [200, 400, 1000, 2000, 5000, 10000, 20000, 50000],
+                [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
                 (r) =>
-                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/france/filosofi/ind/2017/' +
+                    'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/ind/2019/' +
                     r +
                     'm/',
                 [
                     new gviz.NinjaStarStyle({
-                        sizeCol: 'Ind',
+                        sizeCol: 'ind',
                         size: (v, r, s, zf) => gviz.sPow(v / s.max, 0.26),
                         colorCol: 'age_ratio',
                         color: (v, r, s) => d3.interpolateSpectral(1 - v),
@@ -46,9 +46,9 @@
                     pixNb: 12,
                     preprocess: (c) => {
                         //<24
-                        const yyy = +c.Ind_0_3 + +c.Ind_4_5 + +c.Ind_6_10 + +c.Ind_11_17 + +c.Ind_18_24
+                        const yyy = +c.ind_0_3 + +c.ind_4_5 + +c.ind_6_10 + +c.ind_11_17 + +c.ind_18_24
                         //>65
-                        const ooo = +c.Ind_65_79 + +c.Ind_80p
+                        const ooo = +c.ind_65_79 + +c.ind_80p
                         c.age_ratio = yyy + ooo == 0 ? 0 : (yyy - ooo) / (yyy + ooo)
                         c.age_ratio = c.age_ratio * 0.5 + 0.5
                     },

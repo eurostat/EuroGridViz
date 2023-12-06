@@ -1,8 +1,46 @@
+
+revamp layers, API - see lflt
+static image background layer
+merge geocanvas and app
+change draw signature: draw(cells, canvas, view(x,y,z), opts) - draw in geo coords by default (!)
+extract modules ?
+
+API changes for v3:
+app -> map
+map.addLayer
+zoom factor -> zoom
+layer.addTo(map)
+
+
+stretching: transition to new functions
+
+style value by alpha: Document
+
+style: spider net diagram
+style: flower - for composition
+style: bi-symbol map
+
+income change: double smoothing map ?
+legend for bivariate map
+
+NO
+POP Pop
+250m - total population
+1000m - tot pop, by gender, average age?
+DWE Dwelling
+250m - SSBID0250M;dwe_todw;dwe_det;dwe_2dw;dwe_row;dwe_mult;dwe_com;dwe_oth;dwe_area
+1000m - same
+BUI - buildings
+250m - SSBID0250M;bui0all;bui99nn;bui1dwe;bui1ind;bui1off;bui1tra;bui1hot;bui1edu;bui1hos;bui1pri;bui2det;bui2hou;bui2row;bui2mul;bui2com;bui2hol;bui2hut;bui2gar;bui2ore;bui2ind;bui2pow;bui2war;bui2agr;bui2off;bui2bus;bui2con;bui2ser;bui2tel;bui2han;bui2roa;bui2hot;bui2acc;bui2res;bui2sch;bui2uni;bui2mus;bui2spo;bui2ent;bui2rel;bui2hos;bui2nur;bui2hea;bui2pri;bui2eme;bui2mon;bui2toi
+1000m - same
+EST - enterprise
+250m - est_tot;emp_tot
+AGH - agri stats
+1000m - agh_typ1;agh_typ2;agh_typ3;agh_typ4;agh_typ5;agh_typ6;agh_typ7;agh_typ8;agh_typ9;agh_typ10;agh_typ11;agh_typ12;agh_typ13;agh_tot;agh_ope;agh_fme;agh_sme;agh_use
+
 Document alpha/blendoperation
 transparency/blending for layer, styles and all layers (background, etc.)
 //normal | multiply | screen | overlay | darken | lighten | color-dodge | color-burn | hard-light | soft-light | difference | exclusion | hue | saturation | color | luminosity
-
-
 
 module parquet
 parquet: monitor, improve
@@ -11,29 +49,13 @@ parquet: make wasm import easier and wasm file smaller (https://github.com/kyleb
 see https://webpack.js.org/guides/code-splitting/
 webpack: check plugins https://webpack.js.org/plugins
 
-
-climate/weather
-https://www.worldclim.org/data/monthlywth.html
-https://chelsa-climate.org/
-https://prism.oregonstate.edu/
-
-
 https://www.svgrepo.com/
-
-
-Cover Crops accross Europe
-https://esdac.jrc.ec.europa.eu/content/cover-crops-accross-europe#tabs-0-description=1
-
 
 isotype grid
 https://fr.wikipedia.org/wiki/Isotype_(pictogramme)
 https://observablehq.com/d/0b8b2a77096cfb70
 https://www.dafont.com/isotype.font
 https://fontmeme.com/fonts/isotype-font/
-
-
-lego shading
-
 
 See https://kgolid.github.io/chromotome-site/
 
@@ -44,13 +66,9 @@ elevation legend
 
 make joyplot work with kernel smoothing
 
-stretching: use "scale" from d3/plot
-
 do shadow with blur + mask
 see how to improve all style using mask/clip
 implement hill shading from https://observablehq.com/@sahilchinoy/a-faster-hillshader
-
-test on various navigators - smartphones
 
 possibility to make layers based on several datasets
 
@@ -65,39 +83,25 @@ hillshading with: https://observablehq.com/@sahilchinoy/a-faster-hillshader
 
 legend style: use "style" method everywhere
 
-
-Drought: https://edo.jrc.ec.europa.eu/edov2/php/index.php?id=1000
-internet connection quality map - see OOKLA dataset - https://github.com/teamookla/ookla-open-data
-https://edgar.jrc.ec.europa.eu/emissions_data_and_maps
-
-
 style polygon, to show urbanised areas only from CLC
+
+value by alpha: Make it for webgl style
 
 StrokeStyle - remove unnecessary colorCol property, when color is static
 
-EUR: population - style dropdown
-EUR: Add others layers. internet? Farm? Other copernicus?
-
 FR: add text: Pour des raisons de confidentialité, ces données ont été modifiées.
 
-document
 pillar: make random example
 color cat: from dict to function ?
 
 EUR elevation: use filter to show urb/water ?
 
-TODO document euronyme
-
-FR BD foret
-
-zoom in/out
+zoom in/out button
 
 mosaic: improve. No scintillement with pseudo random
 
 Pollock style: https://www.arcgis.com/apps/webappviewer/index.html?id=661d96be9fe64b3db4124546b67b2f39
 + others
-
-style: rough.js
 
 fisheye effect
 segment orientation
@@ -140,18 +144,12 @@ geotiff
 https://geotiffjs.github.io/
 https://github.com/geotiffgeotiff.
 
-new EUR layers:
-https://land.copernicus.eu/global/products/
-https://land.copernicus.eu/pan-european/high-resolution-layers
-
 
 Style test: show as hexagonal grid - for circular symbols (?)
 
 TODO use webgl for sideStyle? Make it possible to build sides on GPU ?
 
 value by alpha style: implement it for income map + accessibility
-
-TODO kernel smoothing: fix artifact - empty line below from center point toward south
 
 TODO use canvas shadow? https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/shadowBlur
 TODO use canvas.drawimage to make style whith 1 square icon per cell - emoticon
@@ -165,7 +163,6 @@ TODO map style: contours with color
 TODO map type: bi/tri-variate colors ?
 
 TODO check IE, firefox
-TODO fix compilation problems + add more typescript types
 TODO map style: cell based on its neighboors. Contour like ?
 TODO style with arrows (left, right) (as segment enrichment ?)
 TODO map type: composition as linesup... pile of lines
@@ -173,7 +170,6 @@ TODO map type: composition as donut ring ?
 TODO map type: composition as stripped circles
 TODO map style: joyplot composition
 TODO linesup: Test with changeable width and fixed height ?
-TODO window resize
 TODO better shaded characterset for text style
 TODO joyplot: fill color depending on value ? for negative/positive values
 TODO improve halftone: use Halton sequence
@@ -185,72 +181,7 @@ TODO limit pan
 
 TODO empty tile cache: timestamp tiles + count number of redraws. Empty cache and remove inpriority the old-unused tiles.
 
-TODO map type: trendline - with ENACT dataset ? https://ghsl.jrc.ec.europa.eu/ENACT_POP.php  NO population ?
 TODO map type: contour style. and hypsometric. See https://observablehq.com/@d3/density-contours https://observablehq.com/@sahilchinoy/contour-map?collection=@sahilchinoy/geo-experiments
-
-
-check copernicus urban atlas
-copernicus global land cover: https://land.copernicus.eu/global/products/lc
-
-
-TODO test gridded datasets:
-NL: https://www.cbs.nl/nl-nl/dossier/nederland-regionaal/geografische-data/kaart-van-100-meter-bij-100-meter-met-statistieken
-World: https://wopr.worldpop.org/?NGA/Population/v2.0
-AT: https://www.statistik.at/atlas/?mapid=them_bevoelkerung_bevoelkerungsstand&layerid=layer1&sublayerid=sublayer0&languageid=1
-https://www.statistik.at/en/services/tools/services/regional-information/regional-statistics
-250m population by year... not free. free: 10km sample. Citizenship/origin
-IT: http://gisportal.istat.it/GriAnalyst
-griglia di popolazione 2011 https://www.istat.it/it/archivio/155162
-FI: https://kartta.paikkatietoikkuna.fi/?lang=en
-1km. pop by gender and age, yearly since 2005.
-http://www.stat.fi/org/avoindata/paikkatietoaineistot/vaestoruutuaineisto_1km_en.html
-as WFS: https://geo.stat.fi/geoserver/vaestoruutu/wfs
-SE: https://www.scb.se/en/services/open-data-api/open-geodata/grid-statistics/
-IE: https://www.cso.ie/en/census/census2016reports/workplacezonesand1kmpopulationgrids/
-EE: https://estat.stat.ee/StatistikaKaart/VKR
-SI: https://gis.stat.si/#lang=en
-UK-NI: irregular grid - with 100m. population https://www.nisra.gov.uk/support/geography/grid-square-products
-NO:
-Statistics Norway: https://kart.ssb.no/
-For more grid statistics (Norwegian only): https://www.ssb.no/natur-og-miljo/areal/artikler/kart-og-geodata-fra-ssb
-250m population by gender. many years.
-Kart og geodata fra SSB (own homepage, search for «Nedlasting av rutenettstatistikk»)
-Befolkningsstatistikk (POP) (250m / 1000m / 5000m) - Population statistics
-Boligstatistikk (DWE) (250m / 1000m / 5000m) - Dwelling statistics
-Bygningsmassen (BUI) (250m / 1000m / 5000m) - Construction statistics
-Virksomhetsstatistikk (EST) (250m / 1000m / 5000m) - Enterprise statistics
-Landbrukseiendommer (AGP) (1000m / 5000m) - Agricultural properties
-Jordbruksstatistikk (AGH) (1000m / 5000m) - Agricultural holdings
-Handels- og serviceruter/-soner (250m) - Commerce and service routes/zones
-
-ideamapsnetwork.org - developing a gridded dataset on urban poverty
-US Census Bureau International Database and Subnational Projections (for PEPFAR countries) has extensive time series data through 2100 as well - Samuel I Dupre (CENSUS/POP FED)
-WorldPop - long time series
-
-https://ghsl.jrc.ec.europa.eu/ESMVisualisation.php
-https://ghsl.jrc.ec.europa.eu/enactVisualisation.php
-
-
-DE
-
-German Census 2011 data in 100m grid cells for population, housing, families and houeseholds
-https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html?nn=559100#Gitter
-
-Agriculture (5 and 10km grid)
-https://agraratlas.statistikportal.de/
-
-Mobility indicators by mobile phone usage
-https://storymaps.arcgis.com/stories/58b7b89db42749e69b611a4764870546
-
-It looks like we have grid based tourism data for each year from 2017-2021, see
-https://gis-hsl.hessen.de/portal/apps/webappviewer/index.html?id=621b2739ff8f43e895a759cc0dcc2c70
-however it is available as WMS but it is not immediately clear if we offer the data in csv-Format as well and this afternoon is not a good time to find somebody who might know. But let me know if this is something, you might be interested in, even though it's far from a 10yr+ timeseries.
-
-a little english language tutorial how to deal with 100m grid data in Germany:
-https://github.com/wahlatlas/grid_data/blob/main/gridded_data_tutorial.ipynb
-It uses Python and QGis but describes how the data is structured in general terms.
-
-
 
 
 Census 2021:

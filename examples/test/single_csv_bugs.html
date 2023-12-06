@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+    <head>
+        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+        <title>Gridviz - Single CSV file</title>
+    </head>
+
+    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
+        <div id="viz-container" style="height: 100%; width: 100%"></div>
+
+        <script src="../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
+        <script src="https://unpkg.com/browse/d3-scale@3.2.3/dist/d3-scale.min.js"></script>
+        <script>
+            const nuts2jsonURL = 'https://ec.europa.eu/assets/estat/E/E4/gisco/pub/nuts2json/v2/'
+            const euronymURL = 'https://ec.europa.eu/assets/estat/E/E4/gisco/pub/euronym/v2/UTF/'
+            const bgLayerURL = 'https://ec.europa.eu/eurostat/cache/GISCO/mbkg/elevation_shading/'
+
+            let containerDiv = document.getElementById('viz-container')
+            const app = new gviz.App(containerDiv)
+                .setGeoCenter({ x: 4500000, y: 2900000 })
+                .setZoomFactor(3000)
+                .setLabelLayer(
+                    gviz_es.getEuronymeLabelLayer('EUR', 50, {
+                        //  ccIn: [
+                        //     'AT',
+                        //     'BE',
+                        //     'BG',
+                        //     'CY',
+                        //     'CZ',
+                        //     'DE',
+                        //     'DK',
+                        //     'EE',
+                        //     'ES',
+                        //     'FI',
+                        //     'FR',
+                        //     'GR',
+                        //     'HR',
+                        //     'HU',
+                        //     'IE',
+                        //     'IT',
+                        //     'LT',
+                        //     'LU',
+                        //     'LV',
+                        //     'PL',
+                        //     'PT',
+                        //     'MT',
+                        //     'NL',
+                        //     'RO',
+                        //     'SE',
+                        //     'SK',
+                        //     'SI',
+                        //     'CH',
+                        //     'NO',
+                        //     'LI',
+                        // ],
+                        baseURL: euronymURL,
+                    })
+                )
+                .setBoundaryLayer(
+                    gviz_es.getEurostatBoundariesLayer({
+                        baseURL: nuts2jsonURL,
+                        showOth: true,
+                        color: (f, zf) => {
+                            const p = f.properties
+                            if (p.id >= 100000) return '#bcbcbc'
+                            if (p.co === 'T') return '#888'
+                            if (zf < 400) return '#888'
+                            else if (zf < 1000) return p.lvl >= 3 ? '' : '#888'
+                            else if (zf < 2000) return p.lvl >= 2 ? '' : '#888'
+                            else return p.lvl >= 1 ? '' : '#888'
+                        },
+                    })
+                )
+                .addBackgroundLayer({
+                    url: bgLayerURL,
+                    resolutions: Array.from({ length: 9 }, (_, i) => 28.00132289714475 * Math.pow(2, 10 - i)),
+                    origin: [0, 6000000],
+                    filterColor: (zf) => '#ffffffc0',
+                })
+
+            const colors = [
+                '#D62F27',
+                '#E65A3E',
+                '#F08159',
+                '#F7AC79',
+                '#FCD39A',
+                '#FFFFFF',
+                '#D9E0BF',
+                '#B4C2BD',
+                '#8DA5BA',
+                '#6A8CB8',
+                '#4575B5',
+            ]
+
+            const categories = [
+                'Warmest year',
+                'Second warmest',
+                'Third warmest',
+                'Fourth warmest',
+                'From fifth to tenth warmest',
+                '11-16th warmest/coldest',
+                'From fifth to tenth coldest',
+                'Fourth coldest',
+                'Third coldest',
+                'Second coldest',
+                'Coldest year',
+            ]
+
+            const breaks = [1, 2, 3, 4, 10, 27, 28, 29, 30, 31, 32, 33]
+            const DATAFIELD = 'value'
+            const TOOLTIPFUNCTION = (c, r) => {
+                return +c[DATAFIELD] ? '<b>' + c[DATAFIELD] + '</b> days' : ''
+            }
+            const COLORFUNCTION = (value) => {
+                if (value) {
+                    if (value == breaks[0]) return colors[0] //
+                    if (value == breaks[1]) return colors[1] //
+                    if (value == breaks[2]) return colors[2] //
+                    if (value == breaks[3]) return colors[3] //
+                    if (value == breaks[4]) return colors[4] //
+                    if (value == breaks[5]) return colors[5] // others
+                    if (value == breaks[6]) return colors[6] //
+                    if (value == breaks[7]) return colors[7] //
+                    if (value == breaks[8]) return colors[8] //
+                    if (value == breaks[9]) return colors[9] //
+                    if (value == breaks[10]) return colors[10] //
+                    if (value == breaks[11]) return colors[11] //
+                    return colors[5]
+                }
+            }
+
+            //add layer
+            app.addCSVGridLayer(
+                //data URL
+                '../../assets/csv/Europe/TMAX_ranking.csv',
+                //resolution, in CRS unit (m)
+                25000,
+                //the style
+                [
+                    // no pan for ShapeColorSizeStyle
+                    // new gviz.ShapeColorSizeStyle({
+                    //     colorCol: 'value',
+                    //     color: COLORFUNCTION,
+                    // }),
+
+                    // no tooltip for SquareColorWGLStyle
+                    // new gviz.SquareColorWGLStyle({
+                    //     colorCol: DATAFIELD,
+                    //     tFun: (value) => {
+                    //         //recode the values into 1 to 12. values 11-16 need to become class 5
+                    //         if (value == 1) return 0.1
+                    //         if (value == 2) return 0.2
+                    //         if (value == 3) return 0.3
+                    //         if (value == 4) return 0.4
+                    //         if (value <= 10) return 0.5
+                    //         if (value <= 27) return 0.6
+                    //         if (value > 27 && value <= 28) return 0.7
+                    //         if (value > 27 && value <= 29) return 0.8
+                    //         if (value > 27 && value <= 30) return 0.9
+                    //         if (value > 27 && value <= 31) return 1
+                    //         if (value > 27 && value <= 32) return 1
+                    //     }, // 3 => 0.3
+                    //     colors: colors,
+                    // }),
+
+                    new gviz.SquareColorCatWGLStyle({
+                        colorCol: 'value',
+                        color: {
+                            1: colors[0],
+                            2: colors[1],
+                            3: colors[2],
+                            4: colors[3],
+                            5: colors[4],
+                            6: colors[5],
+                            7: colors[6],
+                            8: colors[7],
+                            9: colors[8],
+                            10: colors[9],
+                            11: colors[10],
+                        },
+                    }),
+                ],
+                {
+                    cellInfoHTML: (c) => clcLabels[c.value],
+                    // preprocess: (c) => {
+                    //     let accepted = [
+                    //         'AT',
+                    //         'BE',
+                    //         'BG',
+                    //         'CY',
+                    //         'CZ',
+                    //         'DE',
+                    //         'DK',
+                    //         'EE',
+                    //         'ES',
+                    //         'FI',
+                    //         'FR',
+                    //         'GR',
+                    //         'HR',
+                    //         'HU',
+                    //         'IE',
+                    //         'IT',
+                    //         'LT',
+                    //         'LU',
+                    //         'LV',
+                    //         'PL',
+                    //         'PT',
+                    //         'MT',
+                    //         'NL',
+                    //         'RO',
+                    //         'SE',
+                    //         'SK',
+                    //         'SI',
+                    //         'CH',
+                    //         'NO',
+                    //         'LI',
+                    //     ]
+                    // },
+                }
+            )
+
+            //add legend
+            let colCat = colors.map((color,i)=> [color,categories[i]])
+
+            app.layers[0].styles[0].legends.push(
+                new gviz.ColorCategoryLegend({
+                title: 'Ranking since 1991',
+                colCat: colCat,
+                shape: 'square',
+            }))
+
+            // app.layers[0].styles[0].legends.push(
+            //     new gviz.ColorDiscreteLegend({
+            //         title: 'Ranking since 1991',
+            //         titleFontSize: '15px',
+            //         labelFontSize: '15px',
+            //         colors: colors,
+            //         breaksText: breaks,
+            //         width: 250,
+            //     })
+            // )
+        </script>
+    </body>
+</html>

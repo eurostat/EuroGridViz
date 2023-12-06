@@ -21,12 +21,13 @@
         </div>
 
         <script src="../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script>
             let containerDiv = document.getElementById('viz-container')
             const app = new gviz.App(containerDiv)
                 .setGeoCenter({ x: 135000, y: 456000 })
                 .setZoomFactor(1)
-                .setLabelLayer(gviz.getEuronymeLabelLayer())
+                .setLabelLayer(gviz_es.getEuronymeLabelLayer())
 
             const colorDict = {
                 'Population under 14': '#e6ab02',

@@ -1,6 +1,6 @@
 {
     "name": "gridviz",
-    "version": "2.0.51",
+    "version": "2.1.17",
     "description": "Visualization tool for gridded statistics",
     "keywords": [
         "statistics",
@@ -39,9 +39,9 @@
     "scripts": {
         "start": "export NODE_OPTIONS=--openssl-legacy-provider && webpack --config webpack.config.dev.cjs",
         "start-dev": "webpack --config webpack.config.dev.cjs",
-        "server": "webpack serve -c webpack.config.dev.js --static ./",
+        "server": "webpack serve -c webpack.config.dev.cjs",
         "doc": "./node_modules/.bin/jsdoc src/ src/dataset src/legend src/style -d docs/jsdoc",
-        "build-prod": "webpack --config webpack.config.prod.cjs",
+        "bp": "webpack --config webpack.config.prod.cjs",
         "test": "jest"
     },
     "files": [
@@ -52,7 +52,6 @@
         "d3-color": "^3.1.0",
         "d3-fetch": "^3.0.1",
         "d3-format": "^3.1.0",
-        "d3-geo": "^3.0.1",
         "d3-random": "^3.0.1",
         "d3-selection": "^3.0.0",
         "d3-zoom": "^3.0.0"
@@ -67,9 +66,9 @@
         "jshint": "^2.12.0",
         "prettier": "2.8.8",
         "puppeteer": "^9.1.1",
-        "webpack": "^5.75.0",
-        "webpack-cli": "^5.0.0",
-        "webpack-dev-server": "^4.11.1",
+        "webpack": "^5.89.0",
+        "webpack-cli": "^5.1.4",
+        "webpack-dev-server": "^4.15.1",
         "webpack-livereload-plugin": "^3.0.2"
     },
     "engines": {

@@ -9,6 +9,7 @@
         <div id="viz-container" style="height: 100%; width: 100%"></div>
 
         <script src="../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
@@ -21,19 +22,19 @@
                 .setZoomFactorExtent([7, 2000])
 
                 .setBackgroundColor('black')
-                .setLabelLayer(gviz.getEuronymeLabelLayer('FR', '20', { dark: true }))
-                .setBoundaryLayer(gviz.getEurostatBoundariesLayer())
+                .setLabelLayer(gviz_es.getEuronymeLabelLayer('FR', '20', { dark: true }))
+                .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
                 .setViewFromURL()
 
                 .addMultiScaleTiledGridLayer(
-                    [200, 400, 1000, 2000, 5000, 10000, 20000, 50000],
+                    [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/france/filosofi/ind/2015/' +
+                        'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/inc/2019/' +
                         r +
                         'm/',
                     [
                         new gviz.SquareColorWGLStyle({
-                            colorCol: 'Ind',
+                            colorCol: 'ind',
                             color: d3.interpolateMagma,
                             stretching: { fun: 'expRev', alpha: -7 },
                         }),
@@ -41,7 +42,7 @@
                     ],
                     {
                         pixNb: 1.5,
-                        cellInfoHTML: (c) => '<b>' + c.Ind + '</b> inhabitant' + (c.Ind == 1 ? '' : 's'),
+                        cellInfoHTML: (c) => '<b>' + c.ind + '</b> inhabitant' + (c.ind == 1 ? '' : 's'),
                     }
                 )
 

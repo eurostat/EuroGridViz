@@ -18,20 +18,20 @@
                 .addMultiScaleTiledGridLayer(
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' +
+                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
                         r +
                         'm/',
                     [
                         new gviz.ShapeColorSizeStyle({
                             color: () => 'purple',
-                            sizeCol: '2018',
+                            sizeCol: 'TOT_P_2021',
                             size: (v, r, s, zf) => 1.4 * r * gviz.sPow(v / s.max, 0.2),
                             shape: () => 'circle',
                         }),
                     ],
                     {
                         pixNb: 8,
-                        cellInfoHTML: (c) => '<b>' + c['2018'] + '</b> inhabitant(s)',
+                        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
                     }
                 )
         </script>

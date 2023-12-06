@@ -14,6 +14,7 @@
         <div id="viz2" style="height: 400px; width: 600px"></div>
 
         <script src="../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
@@ -26,12 +27,12 @@
                 .addMultiScaleTiledGridLayer(
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' +
+                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
                         r +
                         'm/',
                     [
                         new gviz.SquareColorWGLStyle({
-                            colorCol: '2018',
+                            colorCol: 'TOT_P_2021',
                             tFun: (value, resolution, stats) => gviz.sExp(value / stats.max, -50),
                         }),
                     ],
@@ -67,8 +68,8 @@
                 .setGeoCenter({ x: 4000000, y: 2960000 })
                 .setZoomFactor(600)
                 .setZoomFactorExtent([40, 7500])
-                .setLabelLayer(gviz.getEuronymeLabelLayer())
-                .setBoundaryLayer(gviz.getEurostatBoundariesLayer())
+                .setLabelLayer(gviz_es.getEuronymeLabelLayer())
+                .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
                 .addMultiScaleTiledGridLayer(
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>

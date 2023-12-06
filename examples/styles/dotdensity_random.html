@@ -16,6 +16,7 @@
         <div id="viz-container" style="height: 100%; width: 100%"></div>
 
         <script src="../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
@@ -29,7 +30,7 @@
                 .setBackgroundColor('#eaeaea')
 
                 .setLabelLayer(
-                    gviz.getEuronymeLabelLayer('EUR', 50, {
+                    gviz_es.getEuronymeLabelLayer('EUR', 50, {
                         ex: 1.8,
                         fontFamily: 'mf',
                         exSize: 1.1,
@@ -42,12 +43,12 @@
                 .addMultiScaleTiledGridLayer(
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' +
+                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
                         r +
                         'm/',
                     [
                         new gviz.DotDensityStyle({
-                            nbCol: '2018',
+                            nbCol: 'TOT_P_2021',
                             nb: (v, r, s, zf) => (((15 * r * r) / (zf * zf)) * v) / s.max,
                             dotSize: (r, zf) => 1.6 * zf,
                             color: () => d3.schemeCategory10[Math.floor(10 * Math.random())],
@@ -56,7 +57,7 @@
                     ],
                     {
                         pixNb: 10,
-                        cellInfoHTML: (c) => '<b>' + c['2018'] + '</b> inhabitant(s)',
+                        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
                     }
                 )
 

@@ -72,19 +72,31 @@ export class DatasetComponent {
     getCellFromPosition(posGeo, cells) {
         //compute candidate cell position
         /** @type {number} */
-        const r = this.getResolution()
+        //const r = this.getResolution()
         /** @type {number} */
-        const cellX = r * Math.floor(posGeo.x / r)
+        //const cellX = r * Math.floor(posGeo.x / r)
         /** @type {number} */
-        const cellY = r * Math.floor(posGeo.y / r)
+        //const cellY = r * Math.floor(posGeo.y / r)
 
-        //get cell
+        /*/get cell
         for (const cell of cells) {
             if (cell.x != cellX) continue
             if (cell.y != cellY) continue
             return cell
         }
+        return undefined*/
+
+        /** @type {number} */
+        const r = this.getResolution()
+        for (const cell of cells) {
+            if (posGeo.x < cell.x) continue
+            else if (cell.x + r < posGeo.x) continue
+            else if (posGeo.y < cell.y) continue
+            else if (cell.y + r < posGeo.y) continue
+            else return cell
+        }
         return undefined
+
     }
 
     //getters and setters

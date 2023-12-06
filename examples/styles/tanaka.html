@@ -18,15 +18,15 @@
                 .addMultiScaleTiledGridLayer(
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' +
+                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
                         r +
                         'm/',
-                    gviz.TanakaStyle.get('2018', {
+                    gviz.TanakaStyle.get('TOT_P_2021', {
                         tFun: (v, r, s, zf) => gviz.sExpRev((v - s.min) / (s.max - s.min), -7),
                     }),
                     {
                         pixNb: 6,
-                        cellInfoHTML: (c) => '<b>' + c['2018'] + '</b> inhabitant(s)',
+                        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
                     }
                 )
         </script>

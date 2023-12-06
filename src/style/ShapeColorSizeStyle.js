@@ -2,6 +2,7 @@
 'use strict'
 
 import { Style } from '../Style.js'
+import { color } from 'd3-color'
 
 /**
  * A very generic style that shows grid cells with specific color, size and shape.
@@ -34,6 +35,14 @@ export class ShapeColorSizeStyle extends Style {
         /** A function returning the shape of a cell.
          * @type {function(import("../Dataset").Cell):import("../Style").Shape} */
         this.shape = opts.shape || (() => 'square')
+
+        /** The name of the column/attribute of the tabular data where to retrieve the variable for color alpha.
+         * @type {string} */
+        this.alphaCol = opts.alphaCol
+
+        /** A function returning the color alpha of the cell.
+         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
+        this.alphaF = opts.alphaF
     }
 
     /**
@@ -64,6 +73,12 @@ export class ShapeColorSizeStyle extends Style {
             statColor = Style.getStatistics(cells, (c) => c[this.colorCol], true)
         }
 
+        let statAlpha
+        if (this.alphaCol) {
+            //compute color alpha variable statistics
+            statAlpha = Style.getStatistics(cells, (c) => c[this.alphaCol], true)
+        }
+
         //draw with HTML canvas
         //in geo coordinates
         cg.setCanvasTransform()
@@ -71,9 +86,19 @@ export class ShapeColorSizeStyle extends Style {
         const r2 = r * 0.5
         for (let cell of cells) {
             //color
-            const col = this.color ? this.color(cell[this.colorCol], r, statColor, zf) : undefined
+            let col = this.color ? this.color(cell[this.colorCol], r, statColor, zf) : undefined
             if (!col || col === 'none') continue
-            cg.ctx.fillStyle = col
+
+            //alpha
+            if (this.alphaCol && this.alphaF) {
+                //get alpha
+                const alpha = this.alphaF(cell[this.alphaCol], r, statAlpha, zf)
+                if (alpha == 0) continue
+                //apply alpha to color col
+                const col_ = color(col);
+                if (col_) col = `rgba(${col_.r}, ${col_.g}, ${col_.b}, ${alpha})`;
+                else console.warn("Could not decode color " + col + " in ShapeColorSizeStyle")
+            }
 
             //shape
             const shape = this.shape ? this.shape(cell) : 'square'
@@ -88,6 +113,7 @@ export class ShapeColorSizeStyle extends Style {
             //get offset
             const offset = this.offset(cell, r, zf)
 
+            cg.ctx.fillStyle = col
             if (shape === 'square') {
                 //draw square
                 const d = r * (1 - sG / r) * 0.5
@@ -121,6 +147,6 @@ export class ShapeColorSizeStyle extends Style {
         }
 
         //update legends
-        this.updateLegends({ style: this, r: r, zf: zf, sSize: statSize, sColor: statColor })
+        this.updateLegends({ style: this, r: r, zf: zf, sSize: statSize, sColor: statColor, sAlpha: statAlpha })
     }
 }

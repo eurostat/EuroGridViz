@@ -97,6 +97,7 @@
         </div>
 
         <script src="../../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script>
             const nuts2jsonURL = 'https://raw.githubusercontent.com/eurostat/Nuts2json/master/pub/v2/' //"https://ec.europa.eu/assets/estat/E/E4/gisco/pub/nuts2json/v2/"
             const euronymURL = 'https://raw.githubusercontent.com/eurostat/euronym/main/pub/v2/UTF/' //"https://ec.europa.eu/assets/estat/E/E4/gisco/pub/euronym/v2/UTF/"
@@ -207,7 +208,7 @@
                 .setZoomFactor(8000)
                 .setZoomFactorExtent([40, 8000])
                 .setLabelLayer(
-                    gviz.getEuronymeLabelLayer('EUR', 50, {
+                    gviz_es.getEuronymeLabelLayer('EUR', 50, {
                         ccIn: [
                             'AT',
                             'BE',
@@ -251,7 +252,7 @@
                     })
                 )
                 .setBoundaryLayer(
-                    gviz.getEurostatBoundariesLayer({
+                    gviz_es.getEurostatBoundariesLayer({
                         baseURL: nuts2jsonURL,
                         showOth: false,
                         color: (f, zf) => {

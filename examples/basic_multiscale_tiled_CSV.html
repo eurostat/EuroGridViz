@@ -22,13 +22,13 @@
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     //the URL, from the resolution
                     (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' +
+                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
                         r +
                         'm/',
                     //the styles
                     [
                         new gviz.SquareColorWGLStyle({
-                            colorCol: '2018',
+                            colorCol: 'TOT_P_2021',
                             tFun: (value, resolution, stats) => gviz.sExp(value / stats.max, -50),
                         }),
                     ],

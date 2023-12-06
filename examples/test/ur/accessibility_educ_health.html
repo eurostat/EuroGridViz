@@ -134,6 +134,7 @@
         </div>
 
         <script src="../../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
@@ -149,7 +150,7 @@
                 .setZoomFactor(8000)
                 .setZoomFactorExtent([40, 8000])
                 .setLabelLayer(
-                    gviz.getEuronymeLabelLayer('EUR', 50, {
+                    gviz_es.getEuronymeLabelLayer('EUR', 50, {
                         ccIn: [
                             'AT',
                             'BE',
@@ -193,7 +194,7 @@
                     })
                 )
                 .setBoundaryLayer(
-                    gviz.getEurostatBoundariesLayer({
+                    gviz_es.getEurostatBoundariesLayer({
                         baseURL: nuts2jsonURL,
                         showOth: false,
                         color: (f, zf) => {

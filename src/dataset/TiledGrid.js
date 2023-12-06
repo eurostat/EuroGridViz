@@ -137,82 +137,82 @@ export class TiledGrid extends DatasetComponent {
                 if (tile) continue
 
                 //mark tile as loading
-                this.cache[xT][yT] = 'loading'
-                    ; (async () => {
-                        //request tile
+                this.cache[xT][yT] = "loading";
+                (async () => {
+                    //request tile
+                    /** @type {Array.<import("../Dataset").Cell>}  */
+                    let cells
+
+                    try {
                         /** @type {Array.<import("../Dataset").Cell>}  */
-                        let cells
+                        // @ts-ignore
+                        const data = await csv(this.url + xT + '/' + yT + '.csv')
 
-                        try {
-                            /** @type {Array.<import("../Dataset").Cell>}  */
-                            // @ts-ignore
-                            const data = await csv(this.url + xT + '/' + yT + '.csv')
+                        //if (monitor) monitorDuration('*** TiledGrid parse start')
 
-                            if (monitor) monitorDuration('*** TiledGrid parse start')
-
-                            //preprocess/filter
-                            if (this.preprocess) {
-                                cells = []
-                                for (const c of data) {
-                                    const b = this.preprocess(c)
-                                    if (b == false) continue
-                                    cells.push(c)
-                                }
-                            } else {
-                                cells = data
+                        //preprocess/filter
+                        if (this.preprocess) {
+                            cells = []
+                            for (const c of data) {
+                                const b = this.preprocess(c)
+                                if (b == false) continue
+                                cells.push(c)
                             }
-
-                            if (monitor) monitorDuration('preprocess / filter')
-                        } catch (error) {
-                            //mark as failed
-                            this.cache[xT][yT] = 'failed'
-                            return
+                        } else {
+                            cells = data
                         }
 
-                        //store tile in cache
-                        if (!this.info) {
-                            console.error('Tile info inknown')
-                            return
-                        }
-                        const tile_ = new GridTile(cells, xT, yT, this.info)
-                        this.cache[xT][yT] = tile_
+                        //if (monitor) monitorDuration('preprocess / filter')
+                    } catch (error) {
+                        //mark as failed
+                        this.cache[xT][yT] = 'failed'
+                        return
+                    }
 
-                        if (monitor) monitorDuration('storage')
+                    //store tile in cache
+                    if (!this.info) {
+                        console.error('Tile info inknown')
+                        return
+                    }
+                    const tile_ = new GridTile(cells, xT, yT, this.info)
+                    this.cache[xT][yT] = tile_
 
-                        //if no redraw is specified, then leave
-                        if (!redrawFun) return
+                    //if (monitor) monitorDuration('storage')
 
-                        //check if redraw is really needed, that is if:
+                    //if no redraw is specified, then leave
+                    if (!redrawFun) return
 
-                        // 1. the dataset belongs to a layer which is visible at the current zoom level
-                        let redraw = false
-                        //go through the layers
-                        const zf = this.app.getZoomFactor()
-                        for (const lay of this.app.layers) {
-                            if (!lay.visible) continue
-                            if (lay.getDatasetComponent(zf) != this) continue
-                            //found one layer. No need to seek more.
-                            redraw = true
-                            break
-                        }
-                        if (monitor) monitorDuration('check redraw 1')
+                    //check if redraw is really needed, that is if:
 
-                        if (!redraw) return
+                    // 1. the dataset belongs to a layer which is visible at the current zoom level
+                    let redraw = false
+                    //go through the layers
+                    const zf = this.app.getZoomFactor()
+                    for (const lay of this.app.layers) {
+                        if (!lay.visible) continue
+                        if (lay.getDatasetComponent(zf) != this) continue
+                        //found one layer. No need to seek more.
+                        redraw = true
+                        break
+                    }
+                    //if (monitor) monitorDuration('check redraw 1')
 
-                        // 2. the tile is within the view, that is its geo envelope intersects the viewer geo envelope.
-                        const env = this.app.updateExtentGeo()
-                        const envT = tile_.extGeo
-                        if (env.xMax <= envT.xMin) return
-                        if (env.xMin >= envT.xMax) return
-                        if (env.yMax <= envT.yMin) return
-                        if (env.yMin >= envT.yMax) return
+                    if (!redraw) return
 
-                        if (monitor) monitorDuration('check redraw 2')
-                        if (monitor) monitorDuration('*** TiledGrid parse end')
+                    // 2. the tile is within the view, that is its geo envelope intersects the viewer geo envelope.
+                    const env = this.app.updateExtentGeo()
+                    const envT = tile_.extGeo
+                    if (env.xMax <= envT.xMin) return
+                    if (env.xMin >= envT.xMax) return
+                    if (env.yMax <= envT.yMin) return
+                    if (env.yMin >= envT.yMax) return
 
-                        //redraw
-                        redrawFun()
-                    })()
+                    //if (monitor) monitorDuration('check redraw 2')
+                    //if (monitor) monitorDuration('*** TiledGrid parse end')
+
+                    //redraw
+                    redrawFun()
+                })()
             }
         }
         return this

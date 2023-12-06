@@ -1,0 +1,75 @@
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns:bx="https://boxy-svg.com"
+                >
+                    <defs>
+                        <linearGradient
+                            id="linear-gradient"
+                            x1="0.155"
+                            y1="1"
+                            x2="0.837"
+                            y2="0.011"
+                            gradientUnits="objectBoundingBox"
+                        >
+                            <stop offset="0" stop-color="#082b7a"></stop>
+                            <stop offset="0.5" stop-color="#0e47cb"></stop>
+                        </linearGradient>
+                        <linearGradient
+                            id="linear-gradient-2"
+                            x1="0.759"
+                            y1="0.991"
+                            x2="0.243"
+                            y2="0.013"
+                            gradientUnits="objectBoundingBox"
+                        >
+                            <stop offset="0" stop-color="#f4f5f5"></stop>
+                            <stop offset="1" stop-color="#7d8088"></stop>
+                        </linearGradient>
+                        <linearGradient
+                            id="linear-gradient-3"
+                            x1="0.17"
+                            y1="0.979"
+                            x2="0.843"
+                            y2="0.002"
+                            gradientUnits="objectBoundingBox"
+                        >
+                            <stop offset="0" stop-color="#fffcf2"></stop>
+                            <stop offset="0.5" stop-color="#fc0"></stop>
+                        </linearGradient>
+                    </defs>
+                    <path
+                        id="Path_7400"
+                        data-name="Path 7400"
+                        d="M 106.522 4.981 L 90.628 4.981 L 55.252 47.137 L 71.146 47.137 L 106.522 4.981 Z"
+                        class="cls-1"
+                        style="fill: url(#linear-gradient)"
+                    ></path>
+                    <path
+                        id="Path_7401"
+                        data-name="Path 7401"
+                        d="M 37.563 26.06 L 53.459 26.06 L 71.146 47.138 L 55.252 47.138 L 37.563 26.06 Z"
+                        class="cls-2"
+                        style="fill: url(#linear-gradient-2)"
+                    ></path>
+                    <path
+                        id="Path_7402"
+                        data-name="Path 7402"
+                        d="M 53.456 26.06 L 37.56 26.06 L 2.184 68.216 L 18.079 68.216 L 53.456 26.06 Z"
+                        class="cls-3"
+                        style="fill: url(#linear-gradient-3)"
+                    ></path>
+                    <path
+                        d="M 45.491 35.489 L 56.975 49.192 L 34.006 49.192 L 45.491 35.489 Z"
+                        bx:shape="triangle 34.006 35.489 22.969 13.703 0.5 0 1@35ebc8e0"
+                        class="logo-ribbon-cut-fill"
+                        style="fill: rgb(255, 255, 255)"
+                    ></path>
+                    <path
+                        d="M 106.491 4.983 L 142.184 47.529 L 70.797 47.529 L 106.491 4.983 Z"
+                        bx:shape="triangle 70.797 4.983 71.387 42.546 0.5 0 1@f96aa82c"
+                        style="fill: rgb(255, 255, 255)"
+                    ></path>
+
+                  <rect xmlns="http://www.w3.org/2000/svg" width="30" x="106" y="5" height="63" style="fill:#ffffff"/>
+
+                </svg>

@@ -9,6 +9,7 @@
         <div id="viz-container" style="height: 100%; width: 100%"></div>
 
         <script src="../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script>
             let containerDiv = document.getElementById('viz-container')
 
@@ -18,7 +19,7 @@
                 .setZoomFactorExtent([30, 7000])
                 .setViewFromURL()
                 .setLabelLayer(
-                    gviz.getEuronymeLabelLayer('EUR', 50, {
+                    gviz_es.getEuronymeLabelLayer('EUR', 50, {
                         ex: 1.8,
                         exSize: 1,
                         color: () => 'black',
@@ -27,7 +28,7 @@
                     })
                 )
                 .setBoundaryLayer(
-                    gviz.getEurostatBoundariesLayer({
+                    gviz_es.getEurostatBoundariesLayer({
                         scale: '10M',
                         col: '#00000044',
                         lineDash: () => [],
@@ -36,12 +37,12 @@
                 .addMultiScaleTiledGridLayer(
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' +
+                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
                         r +
                         'm/',
                     [
                         new gviz.JoyPlotStyle({
-                            heightCol: '2018',
+                            heightCol: 'TOT_P_2021',
                             height: (v, r, s, zf) => 5 * r * gviz.sPow(v / s.max, 0.4),
                             lineColor: (y, ys, r, zf) => {
                                 const t = 255 - (255 * (y - ys.min)) / (ys.max - ys.min)
@@ -60,7 +61,7 @@
                     ],
                     {
                         pixNb: 8,
-                        cellInfoHTML: (c) => '<b>' + c['2018'] + '</b> inhabitant(s)',
+                        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
                     }
                 )
 

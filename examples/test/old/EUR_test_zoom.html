@@ -9,6 +9,7 @@
         <div id="viz-container" style="height: 100%; width: 100%"></div>
 
         <script src="../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
@@ -18,12 +19,12 @@
                 .setGeoCenter({ x: 4000000, y: 2960000 })
                 .setZoomFactor(100)
                 .setZoomFactorExtent([50, 11000])
-                .setLabelLayer(gviz.getEuronymeLabelLayer())
-                .setBoundaryLayer(gviz.getEurostatBoundariesLayer())
+                .setLabelLayer(gviz_es.getEuronymeLabelLayer())
+                .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
 
             //style data
             const s = new gviz.SquareColorWGLStyle({
-                colorCol: '2018',
+                colorCol: 'TOT_P_2021',
                 color: d3.interpolateOrRd,
             })
 
@@ -31,21 +32,13 @@
             app.addMultiScaleTiledGridLayer(
                 resolutions,
                 (r) =>
-                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' +
+                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
                     r +
                     'm/',
                 [s],
                 {
-                    cellInfoHTML: (c) =>
-                        'Inhabitant(s)<br>2018: <b>' +
-                        c['2018'] +
-                        '</b><br>2011: <b>' +
-                        c['2011'] +
-                        '</b><br>2006: <b>' +
-                        c['2006'] +
-                        '</b>',
                     preprocess: (c) => {
-                        c.r = c['Ind_snv'] / c['Ind'] / 12
+                        c.r = c.Ind_snv / c.Ind / 12
                     },
                 },
                 10

@@ -9,6 +9,7 @@
         <div id="viz-container" style="height: 100%; width: 100%"></div>
 
         <script src="../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
@@ -18,8 +19,8 @@
             new gviz.App(containerDiv)
                 .setGeoCenter({ x: 4000000, y: 2260000 })
                 .setZoomFactor(500)
-                .setLabelLayer(gviz.getEuronymeLabelLayer('FR', '20'))
-                .setBoundaryLayer(gviz.getEurostatBoundariesLayer())
+                .setLabelLayer(gviz_es.getEuronymeLabelLayer('FR', '20'))
+                .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
 
                 //addCSVGridLayer(url, resolution, styles, minZoom, maxZoom, opts) {
                 .addGeoTIFFLayer(

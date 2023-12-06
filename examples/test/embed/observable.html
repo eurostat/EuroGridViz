@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+    <head>
+        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+        <title>Observable simulation</title>
+        <style>
+            .observablehq {
+                position: relative;
+                margin: 17px 0;
+                min-height: 1.5rem;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Test of Observable notebook inclusion</h1>
+
+        <div class="observablehq">
+            <div id="filler" style="height: 400px; width: 600px;"></div>
+            <div id="map" style="height: 400px; width: 600px;margin-left:20px;"></div>
+        </div>
+
+        <script src="../../../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+        <script>
+            //map 1
+
+            const map1 = new gviz.App(document.getElementById('map'), { legendDivId: 'legend1' })
+                .setGeoCenter({ x: 4500000, y: 2900000 })
+                .setZoomFactor(3000)
+                .addMultiScaleTiledGridLayer(
+                    [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+                    (r) =>
+                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
+                        r +
+                        'm/',
+                    [
+                        new gviz.SquareColorWGLStyle({
+                            colorCol: 'TOT_P_2021',
+                            tFun: (value, resolution, stats) => gviz.sExp(value / stats.max, -50),
+                        }),
+                    ],
+                    {
+                        pixNb: 3,
+                    }
+                ).addZoomButtons().addFullscreenButton()
+
+            //legend
+            map1.layers[0].styles[0].legends.push(
+                new gviz.ColorLegend({
+                    title: 'Number of inhabitants',
+                    ticks: 5,
+                    colorRamp: d3.interpolateOrRd,
+                    fun: (t, r, s) => s.max * gviz.sExpRevInverse(t, 7),
+                    x:10,
+                    y:400
+                })
+            )
+
+        </script>
+    </body>
+</html>

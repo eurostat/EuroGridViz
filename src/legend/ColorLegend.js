@@ -32,10 +32,13 @@ export class ColorLegend extends Legend {
 
         this.fontSize = opts.fontSize || '0.8em'
         this.invert = opts.invert
+
+        //to be used as opts => opts.sAlpha to show legend on alpha channel
+        this.getStats = opts.getStats || (opts => opts.sColor)
     }
 
     /**
-     * @param {{ style: import("../Style").Style, r: number, zf: number, sSize: import("../Style").Stat, sColor: import("../Style").Stat }} opts
+     * @param {{ style: import("../Style").Style, r: number, zf: number, sSize: import("../Style").Stat, sColor: import("../Style").Stat, sAlpha: import("../Style").Stat }} opts
      */
     update(opts) {
         //could happen when data is still loading
@@ -111,10 +114,11 @@ export class ColorLegend extends Legend {
 
         //label text format
         const f = this.tickFormat && this.tickFormat != 'text' ? format(this.tickFormat) : (v) => v
+        const stat = this.getStats(opts)
         for (let i = 0; i < this.ticks; i++) {
             let t = i / (this.ticks - 1)
 
-            const v = this.fun(t, opts.r, opts.sColor)
+            const v = this.fun(t, opts.r, stat)
             const text = (v ? f(v) : '0') + (this.tickUnit ? this.tickUnit : '')
 
             //tick label

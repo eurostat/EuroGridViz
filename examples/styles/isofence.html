@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+
+<head>
+    <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+    <title>Isometric fence map - GridViz</title>
+</head>
+
+<body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
+    <div id="viz-container" style="height: 100%; width: 100%"></div>
+    <div style="
+                position: absolute;
+                left: 20px;
+                top: 20px;
+                width: auto;
+                height: auto;
+                padding: 10px;
+                border: 0px;
+                border-radius: 5px;
+                background: #ffffffcc;
+                line-height: 1.6;
+                box-shadow: 5px 5px 5px grey;
+            ">
+        <input type="range" min="-180" max="180" value="50" class="slider" id="orientation" style="width: 250px" />
+        <br />
+        <input type="range" min="0" max="10" step="0.05" value="1" class="slider" id="exa" style="width: 250px" />
+    </div>
+
+    <script src="../../dist/gridviz.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+    <script>
+        let containerDiv = document.getElementById('viz-container')
+        const col = d3.interpolateSpectral
+        const app = new gviz.App(containerDiv)
+            .setGeoCenter({ x: 3951000, y: 2255603 })
+            .setZoomFactor(10)
+            .addMultiScaleTiledGridLayer(
+                [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
+                (r) =>
+                    'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/ind/2019/' +
+                    r +
+                    'm/',
+                [
+                    new gviz.IsoFenceStyle({
+                        color: {
+                            ind_0_24: col(0.2),
+                            ind_25_64: col(0.4),
+                            ind_65p: col(0.9),
+                        },
+                        angle: 50,
+                        heightCol: 'ind',
+                        height: (v, r, s, zf) => r * gviz.sExpRev(v / s.max, -7, 0),
+                        //cornerLineWidth: (c, r, zf, a) => 10 * zf,
+                        //cornerLineStrokeColor: (c, r, zf, a) => "#00000022",
+                        //offset: (c, r, zf) => { return { dx: 0, dy: -r * 0.5 } },
+                        //sVert: false
+                    }),
+                ],
+                {
+                    pixNb: 25,
+                    preprocess: (c) => {
+                        //aggregate to 3 age groups only
+                        c.ind_0_24 = +c.ind_0_3 + +c.ind_4_5 + +c.ind_6_10 + +c.ind_11_17 + +c.ind_18_24
+                        c.ind_25_64 = +c.ind_25_39 + +c.ind_40_54 + +c.ind_55_64
+                        c.ind_65p = +c.ind_65_79 + +c.ind_80p
+                    },
+                }
+            )
+
+        //orientation selection
+        document.getElementById('orientation').oninput = function () {
+            //set orientation
+            app.layers[0].styles[0].angle = this.value
+            //redraw
+            app.cg.redraw()
+        }
+
+        //height exageration selection
+        document.getElementById('exa').oninput = function () {
+            //set orientation
+            app.layers[0].styles[0].height = (v, r, s, zf) => this.value * r * gviz.sExpRev(v / s.max, -7, 0)
+            //redraw
+            app.cg.redraw()
+        }
+
+    </script>
+</body>
+
+</html>

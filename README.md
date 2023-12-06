@@ -4,37 +4,37 @@
 ![npm](https://img.shields.io/npm/v/gridviz)
 ![license](https://img.shields.io/badge/license-EUPL-success)
 
-[Gridviz](https://github.com/eurostat/gridviz/) is a JavaScript library to visualise gridded data (or any tabular dataset with x/y position) in the browser in a large variety of advanced cartographic styles. Unlike traditional raster-based web mapping tools, [Gridviz](https://github.com/eurostat/gridviz/) renders everything client-side, on the fly.
+<p align="center" style="height: 350px;">
+    <img src="docs/img/banner.png">
+</p>
 
-[![](/docs/img/overviews/ov_accessibility.png)](https://eurostat.github.io/gridviz/docs/reference#shapecolorsize-style)
-[![](/docs/img/overviews/ov_side_cat.png)](https://eurostat.github.io/gridviz/docs/reference#side-category-style)
-[![](/docs/img/overviews/ov_age_balance.png)](https://eurostat.github.io/gridviz/docs/reference#shapecolorsize-style)
-[![shadow effect map](/docs/img/overviews/ov_choco.png)](https://eurostat.github.io/gridviz/docs/reference#side-style)
-[![](/docs/img/overviews/ov_dark.png)](https://eurostat.github.io/gridviz/docs/reference#square-color-webgl-style)
-[![](/docs/img/overviews/ov_kersmoo.png)](https://eurostat.github.io/gridviz/docs/reference#kernel-smoothing)
-[![](/docs/img/overviews/ov_pillar_simple.png)](https://eurostat.github.io/gridviz/docs/reference#pillars-style)
-[![](/docs/img/overviews/ov_donut.png)](https://eurostat.github.io/gridviz/docs/reference#shapecolorsize-style)
-[![tanaka style map](/docs/img/overviews/ov_tanaka_dark.png)](https://eurostat.github.io/gridviz/docs/reference#tanaka-style)
-[![](/docs/img/overviews/ov_flag.png)](https://eurostat.github.io/gridviz/docs/reference#composition-style)
-[![joyplot map](/docs/img/overviews/ov_joyplot_shade.png)](https://eurostat.github.io/gridviz/docs/reference#joyplot-style)
-[![lego map](/docs/img/overviews/ov_lego.png)](https://eurostat.github.io/gridviz/docs/reference#lego-style)
-[![mosaic map](/docs/img/overviews/ov_mosaic.png)](https://eurostat.github.io/gridviz/docs/reference#mosaic-style)
-[![](/docs/img/overviews/ov_piechart.png)](https://eurostat.github.io/gridviz/docs/reference#composition-style)
-[![](/docs/img/overviews/ov_pillar.png)](https://eurostat.github.io/gridviz/docs/reference#pillars-style)
-[![](/docs/img/overviews/ov_text_elevation.png)](https://eurostat.github.io/gridviz/docs/reference#text-style)
-[![dot density map](/docs/img/overviews/ov_dotdensity_random.png)](https://eurostat.github.io/gridviz/docs/reference#dot-density-style)
-[![](/docs/img/overviews/ov_popchange.png)](https://eurostat.github.io/gridviz/docs/reference#shapecolorsize-style)
-[![](/docs/img/overviews/ov_ring.png)](https://eurostat.github.io/gridviz/docs/reference#composition-style)
-[![](/docs/img/overviews/ov_segment.png)](https://eurostat.github.io/gridviz/docs/reference#segment-style)
-[![tanaka style map](/docs/img/overviews/ov_tanaka.png)](https://eurostat.github.io/gridviz/docs/reference#tanaka-style)
-[![dot density map](/docs/img/overviews/ov_dotdensity.png)](https://eurostat.github.io/gridviz/docs/reference#dot-density-style)
-[![joyplot map](/docs/img/overviews/ov_joyplot.png)](https://eurostat.github.io/gridviz/docs/reference#joyplot-style)
 
-## Examples
+[Gridviz](https://github.com/eurostat/gridviz/) is a JavaScript library for visualizing gridded data (or any tabular dataset with x/y coordinates for that matter) in the browser using a large variety of [cartographic styles and techniques](https://eurostat.github.io/gridviz/docs/reference). Unlike traditional raster-based web mapping tools, Gridviz renders everything client-side, on the fly.
+
+## Styles
+
+[Visit the style gallery](https://github.com/eurostat/gridviz/blob/master/docs/gallery.md) to see the different customisable styles available for visualizing gridded data with gridviz.
+
+
+[<img src="docs/img/overviews/ov_accessibility.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#shapecolorsize-style)
+[<img src="docs/img/overviews/ov_side_cat.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#side-category-style)
+[<img src="docs/img/overviews/ov_age_balance.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#shapecolorsize-style)
+[<img src="docs/img/overviews/ov_dark.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#square-color-webgl-style)
+[<img src="docs/img/overviews/ov_kersmoo.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#kernel-smoothing)
+[<img src="docs/img/overviews/ov_tanaka_dark.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#tanaka-style)
+[<img src="docs/img/overviews/ov_joyplot_shade.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#joyplot-style)
+[<img src="docs/img/overviews/ov_lego.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#lego-style)
+[<img src="docs/img/overviews/ov_text_elevation.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#text-style)
+[<img src="docs/img/overviews/ov_dotdensity.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#dot-density-style)
+[<img src="docs/img/overviews/ov_joyplot.png" width="70" height="70">](https://eurostat.github.io/gridviz/docs/reference#joyplot-style)
+
+
+## Live Demos
 
 -   [Europe - 1km resolution - GEOSTAT/GISCO](https://eurostat.github.io/gridviz/examples/EUR.html)
 -   [Germany - 100m resolution - Zensus 2011](https://eurostat.github.io/gridviz/examples/DE.html)
--   [France - 200m resolution - INSEE Filosofi](https://eurostat.github.io/gridviz/examples/FR.html)
+-   [France - 200m resolution - INSEE Filosofi](https://eurostat.github.io/gridviz/examples/FR.html). Focus on [total population](https://eurostat.github.io/gridviz/examples/FR_pop.html) and [income](https://eurostat.github.io/gridviz/examples/FR_income.html).
+-   [Norway - 250m resolution - SSB](https://eurostat.github.io/gridviz/examples/NO.html)
 -   [Croatia - 1km resolution - DZS 2015 grid](https://eurostat.github.io/gridviz/examples/HR.html)
 -   [France population, dark style](https://eurostat.github.io/gridviz/examples/styles/squarecolorwgl_dark.html)
 -   [Europe population as a mosaic](https://eurostat.github.io/gridviz/examples/styles/mosaic_full.html)
@@ -96,7 +96,11 @@ See the **[documentation page](https://eurostat.github.io/gridviz/docs/reference
 
 ## Documentation
 
-See the **[API reference](https://eurostat.github.io/gridviz/docs/reference)**.
+See the **[gridviz documentation page](https://github.com/eurostat/gridviz/blob/master/docs/reference.md)**.
+
+## Grid tiling
+
+In order to visualize large grids efficiently, you can produce tiled grids in a [tiled grid format](https://eurostat.github.io/gridviz/docs/tiledformat) with **[GridTiler](https://github.com/eurostat/gridtiler)**.
 
 ## About
 

@@ -77,6 +77,7 @@
         </div>
 
         <script src="../dist/gridviz.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-format@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
         <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
@@ -87,8 +88,8 @@
                 .setGeoCenter({ x: 4806935, y: 2446234 })
                 .setZoomFactor(400.1)
                 .setZoomFactorExtent([20, 2000])
-                .setLabelLayer(gviz.getEuronymeLabelLayer('HR', '20'))
-                .setBoundaryLayer(gviz.getEurostatBoundariesLayer())
+                .setLabelLayer(gviz_es.getEuronymeLabelLayer('HR', '20'))
+                .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
                 .setViewFromURL()
                 .addBackgroundLayer({
                     //url: "https://gisco-services.ec.europa.eu/maps/tiles/GreyEarth/EPSG3035/",
@@ -217,8 +218,6 @@
                             for (let nat of ['AUSTRIAN', 'GERMAN', 'ITALIAN', 'SLOVENIAN'])
                                 override(c, p + '_' + nat + ' TOURISTS')
                         }
-                        //console.log(c["TOTAL ARRIVALS"] == c["A_DOMESTIC TOURISTS - TOTAL"]+c["A_FOREIGN TOURISTS - TOTAL"]) true
-                        //console.log(c["TOTAL NIGHTS"] == c["N_DOMESTIC TOURISTS - TOTAL"]+c["N_FOREIGN TOURISTS - TOTAL"]) true
 
                         for (let p of ['A', 'N'])
                             c[p + '_OTHER'] =
@@ -227,7 +226,6 @@
                                 c[p + '_GERMAN TOURISTS'] -
                                 c[p + '_ITALIAN TOURISTS'] -
                                 c[p + '_SLOVENIAN TOURISTS']
-                        //console.log(c["A_OTHER"] >= 0, c["N_OTHER"] >= 0) true true
                     },
                 }
             )

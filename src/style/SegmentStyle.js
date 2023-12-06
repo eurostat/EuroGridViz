@@ -131,11 +131,11 @@ export class SegmentStyle extends Style {
 
         //update legend, if any
         this.updateLegends({
-            style: this,
+            widthFun: this.width,
             r: r,
             zf: zf,
             sColor: statColor,
-            sLength: statLength,
+            //sLength: statLength,
             sWidth: statWidth,
         })
     }

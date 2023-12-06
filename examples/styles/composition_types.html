@@ -48,21 +48,21 @@
             .setZoomFactorExtent([4, 2000])
             //.setBackgroundColor("black")
             .addMultiScaleTiledGridLayer(
-                [200, 400, 1000, 2000, 5000, 10000, 20000, 50000],
+                [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
                 (r) =>
-                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/france/filosofi/men/2017/' +
+                    'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/men/2019/' +
                     r +
                     'm/',
                 [
                     new gviz.CompositionStyle({
                         color: {
-                            Men_1ind: '#7570b3',  //blue
-                            Men_2_4ind: '#1b9e77', //green
-                            Men_5ind: '#d95f02', //orange
+                            men_1ind: '#7570b3',  //blue
+                            men_2_4ind: '#1b9e77', //green
+                            men_5ind: '#d95f02', //orange
                         },
                         type: () => 'ring',
                         stripesOrientation: () => 0,
-                        sizeCol: 'Men',
+                        sizeCol: 'men',
                         offsetAngle: () => 90,
                         size: (v, r, s, zf) => 1 * r * gviz.sPow(v / s.max, 0.13, 0),
                     }),
@@ -70,7 +70,7 @@
                 {
                     pixNb: 18,
                     preprocess: (c) => {
-                        c.Men_2_4ind = +c.Men - +c.Men_1ind - +c.Men_5ind
+                        c.men_2_4ind = +c.men - +c.men_1ind - +c.men_5ind
                     },
                 }
             )

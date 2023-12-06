@@ -64,8 +64,6 @@ export class SideStyle extends Style {
         /**  @type {Array.<Side>} */
         const sides = []
 
-        const epsilon = r * 0.001
-
         //make horizontal sides
         //sort cells by x and y
         cells.sort((c1, c2) => (c2.x == c1.x ? c1.y - c2.y : c1.x - c2.x))
@@ -73,7 +71,7 @@ export class SideStyle extends Style {
         for (let i = 1; i < cells.length; i++) {
             let c2 = cells[i]
 
-            if (Math.abs(c1.y + r - c2.y) <= epsilon && Math.abs(c1.x - c2.x) <= epsilon)
+            if ((c1.y + r == c2.y) && (c1.x == c2.x))
                 //cells in same column and touch along horizontal side
                 //make shared side
                 sides.push({
@@ -109,7 +107,7 @@ export class SideStyle extends Style {
         for (let i = 1; i < cells.length; i++) {
             let c2 = cells[i]
 
-            if (Math.abs(c1.x + r - c2.x) <= epsilon && Math.abs(c1.y - c2.y) <= epsilon)
+            if ((c1.x + r == c2.x) && (c1.y == c2.y))
                 //cells in same row and touch along vertical side
                 //make shared side
                 sides.push({

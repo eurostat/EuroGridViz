@@ -21,6 +21,10 @@ export class TimeSeriesStyle extends Style {
          * @type {Array.<string>} */
         this.ts = opts.ts
 
+        /** A function specifying when a value should be considered as "no data" and thus not ignored. The line will have a break at these values.
+         * @type {function(string):boolean} */
+        this.noData = opts.noData || ((v) => v === undefined || v == "" || v === null || isNaN(+v))
+
         //x
         /** in geo unit
          * @type {function(import("../Dataset.js").Cell,number,number):number} */
@@ -45,7 +49,6 @@ export class TimeSeriesStyle extends Style {
         /** A function returning the width of the line, in geo unit
          * @type {function(number,number,import("../Style.js").Stat|undefined,number):number} */
         this.lineWidth = opts.lineWidth || ((v, r, s, zf) => 1.5 * zf)
-
 
         /**
          * @type {string} */
@@ -112,7 +115,7 @@ export class TimeSeriesStyle extends Style {
         //in geo coordinates
         cg.setCanvasTransform()
 
-        cg.ctx.lineCap = 'butt'
+        cg.ctx.lineCap = "butt"
         for (let c of cells) {
 
             //line width
@@ -185,23 +188,72 @@ export class TimeSeriesStyle extends Style {
                 continue;
             }
 
+            /*/draw line
             if (val0 == undefined || isNaN(val0)) continue
-
-            //draw line
             cg.ctx.beginPath()
             const sX = w / (nb - 1)
             for (let i = 0; i < nb; i++) {
                 const val = c[this.ts[i]]
-                if (val == undefined) break
+                if (val == undefined || isNaN(val)) break
                 if (i == 0)
                     cg.ctx.moveTo(c.x + i * sX + offX, c.y + y0 + (val - val0) * h / ampMax + offY)
                 else
                     cg.ctx.lineTo(c.x + i * sX + offX, c.y + y0 + (val - val0) * h / ampMax + offY)
             }
+            cg.ctx.stroke()*/
 
-            cg.ctx.stroke()
+
+            //draw line, segment by segment
+            const sX = w / (nb - 1)
+
+            //handle first point
+            let v0 = c[this.ts[0]]
+            if (!this.noData(v0)) {
+                cg.ctx.beginPath()
+                cg.ctx.moveTo(c.x + offX, c.y + y0 + (v0 - val0) * h / ampMax + offY)
+            }
+            //console.log(v0, isNaN(v0))
+
+            let v1
+            for (let i = 1; i < nb; i++) {
+                v1 = c[this.ts[i]]
+
+                //draw segment from v0 to v1
+
+                //both points 'no data'
+                if (this.noData(v0) && this.noData(v1)) {
+
+                    //second point 'no data'
+                } else if (!this.noData(v0) && this.noData(v1)) {
+                    cg.ctx.stroke()
+
+                    //first point 'no data'
+                } else if (this.noData(v0) && !this.noData(v1)) {
+                    cg.ctx.beginPath()
+                    cg.ctx.moveTo(c.x + i * sX + offX, c.y + y0 + (v1 - val0) * h / ampMax + offY)
+
+                    //both points have data: trace line
+                } else {
+                    cg.ctx.lineTo(c.x + i * sX + offX, c.y + y0 + (v1 - val0) * h / ampMax + offY)
+                    //if it is the last point, stroke
+                    if (i == nb - 1) cg.ctx.stroke()
+                }
+                v0 = v1
+            }
 
         }
 
+        //update legend, if any
+        this.updateLegends({
+            widthFun: this.lineWidth,
+            r: r,
+            zf: zf,
+            sColor: statColor,
+            //sLength: statLength,
+            sWidth: statWidth,
+        })
+
     }
+
 }
+

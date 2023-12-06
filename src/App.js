@@ -7,12 +7,15 @@ import { Layer } from './Layer.js'
 import { Dataset } from './Dataset.js'
 import { Tooltip } from './Tooltip.js'
 import { CSVGrid } from './dataset/CSVGrid.js'
+import { LGrid } from './dataset/LGrid.js'
 import { TiledGrid } from './dataset/TiledGrid.js'
 import { BackgroundLayer } from './BackgroundLayer.js'
 import { BackgroundLayerWMS } from './BackgroundLayerWMS.js'
 import { LabelLayer } from './LabelLayer.js'
 import { LineLayer } from './LineLayer.js'
 import { monitor, monitorDuration } from './utils/Utils.js'
+import { ZoomButtons } from './button/ZoomButtons.js'
+import { FullscreenButton } from './button/FullscreenButton.js'
 
 // external imports
 import { select } from 'd3-selection'
@@ -42,6 +45,9 @@ export class App {
             console.error('Cannot find gridviz container element.')
             return
         }
+
+        //https://css-tricks.com/absolute-positioning-inside-relative-positioning/
+        this.container.style.position = "relative"; // container element must have relative positioning
 
         //set dimensions
         /** @type {number} */
@@ -161,7 +167,7 @@ export class App {
 
                 //restore default alpha and blend operation
                 this.cg.ctx.globalAlpha = 1.0
-                this.cg.ctx.globalCompositeOperation = "normal"
+                this.cg.ctx.globalCompositeOperation = this.defaultGlobalCompositeOperation
             }
 
             //draw boundary layer
@@ -198,8 +204,7 @@ export class App {
         /** @type {boolean} */
         this.showBoundaries = true
 
-        //legend div
-
+        // legend div
         this.legendDivId = opts.legendDivId || 'gvizLegend'
         this.legend = select('#' + this.legendDivId)
         if (this.legend.empty()) {
@@ -211,14 +216,14 @@ export class App {
                 .style('position', 'absolute')
                 .style('width', 'auto')
                 .style('height', 'auto')
-                .style('background', '#FFFFFFCC')
+                .style('background', '#FFFFFF')
                 //.style("padding", this.padding)
                 .style('border', '0px')
-                .style('border-radius', '5px')
+                //.style('border-radius', '5px')
                 .style('box-shadow', '3px 3px 3px grey, -3px -3px 3px #ddd')
                 .style('font-family', 'Helvetica, Arial, sans-serif')
-                .style('top', '20px')
-                .style('right', '20px')
+                .style('bottom', '15px')
+                .style('right', '15px')
             //hide
             //.style("visibility", "hidden")
         }
@@ -247,9 +252,9 @@ export class App {
             // transparent background (e.g. leaflet) 'red painting' fix
             if (opts.transparentBackground) {
                 if (focus) {
+                    this.tooltip.html(focus.html)
                     this.tooltip.setPosition(e)
                     this.tooltip.show()
-                    this.tooltip.html(focus.html)
                 } else {
                     this.tooltip.hide()
                 }
@@ -262,9 +267,9 @@ export class App {
             }
 
             if (focus) {
+                this.tooltip.html(focus.html)
                 this.tooltip.setPosition(e)
                 this.tooltip.show()
-                this.tooltip.html(focus.html)
 
                 //show cell position as a rectangle
                 if (!this.canvasSave) {
@@ -302,9 +307,9 @@ export class App {
         this.mouseOverHandler = (e) => focusCell(e)
         this.mouseMoveHandler = (e) => focusCell(e)
         this.mouseOutHandler = (e) => this.tooltip.hide()
-        this.container.addEventListener('mouseover', this.mouseOverHandler)
-        this.container.addEventListener('mousemove', this.mouseMoveHandler)
-        this.container.addEventListener('mouseout', this.mouseOutHandler)
+        this.cg.canvas.addEventListener('mouseover', this.mouseOverHandler)
+        this.cg.canvas.addEventListener('mousemove', this.mouseMoveHandler)
+        this.cg.canvas.addEventListener('mouseout', this.mouseOutHandler)
 
         // add extra logic to onZoomStartFun
         this.cg.onZoomStartFun = (e) => {
@@ -323,6 +328,10 @@ export class App {
 
         //
         //canvas.addEventListener("keydown", e => { console.log(arguments) });
+
+        //set default globalCompositeOperation
+        this.defaultGlobalCompositeOperation =
+            opts.defaultGlobalCompositeOperation || this.cg.ctx.globalCompositeOperation
     }
 
     /**
@@ -350,13 +359,14 @@ export class App {
             const layer = this.layers[i]
             if (!layer.visible) continue
             if (!layer.cellInfoHTML) continue
-            if (layer.cellInfoHTML === 'none') continue
+            //if (layer.cellInfoHTML === 'none') continue
             const dsc = layer.getDatasetComponent(zf)
             if (!dsc) continue
 
             //get cell at mouse position
             /** @type {import('./Dataset').Cell|undefined} */
             const cell = dsc.getCellFromPosition(posGeo, dsc.getViewCache())
+            //console.log(cell, dsc.resolution)
             if (!cell) return undefined
             const html = layer.cellInfoHTML(cell, dsc.getResolution())
             if (!html) return undefined
@@ -447,6 +457,18 @@ export class App {
     }
 
     //dataset creation
+
+    /**
+     * Make a local grid dataset.
+     *
+     * @param {number} resolution The dataset resolution in geographical unit.
+     * @param {Array} cells The cells.
+     * @param {object=} opts The parameters of the dataset.
+     * @returns {Dataset}
+     */
+    makeLGridDataset(resolution, cells, opts) {
+        return new Dataset([new LGrid(resolution, cells)], [], opts)
+    }
 
     /**
      * Make a CSV grid dataset.
@@ -618,6 +640,55 @@ export class App {
         return this
     }
 
+    /**
+     * Adds a set of zoom buttons to the app
+     *
+     * @param {object} opts
+     * @returns {this}
+     */
+    addZoomButtons(opts) {
+        // * opts.id
+        // * opts.onZoom - custom event handler function
+        // * opts.x
+        // * opts.y
+        // * opts.delta - zoom delta applied on each click
+
+        this.zoomButtons = new ZoomButtons({
+            app: this,
+            id: opts?.id || 'gridviz-zoom-buttons',
+            class: opts?.class,
+            x: opts?.x,
+            y: opts?.y,
+            onZoom: opts?.onZoom,
+            delta: opts?.delta || 0.2
+        })
+
+        return this
+    }
+
+    /**
+     * Adds a fullscreen toggle button to the app
+     *
+     * @param {object} opts
+     * @returns {this}
+     */
+    addFullscreenButton(opts) {
+        // * opts.app - the gridviz app
+        // * opts.id
+        // * opts.x
+        // * opts.y
+
+        this.fullscreenButton = new FullscreenButton({
+            app: this,
+            id: opts?.id || 'gridviz-fullscreen-button',
+            class: opts?.class,
+            x: opts?.x,
+            y: opts?.y
+        })
+
+        return this
+    }
+
     /** @returns {this} */
     setViewFromURL() {
         this.cg.setViewFromURL()
@@ -650,6 +721,10 @@ export class App {
                         canvas.setAttribute('width', '' + this.w)
                         canvas.setAttribute('height', '' + this.h)
                         this.redraw()
+
+                        //update button positions
+                        // if (this.zoomButtons) this.zoomButtons.node.style.left = this.w - 50 + 'px'
+                        // if (this.fullscreenButton) this.fullscreenButton.node.style.left = this.w - 50 + 'px'
                     }
                 })
             }

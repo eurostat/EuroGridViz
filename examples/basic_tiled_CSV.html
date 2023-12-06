@@ -19,11 +19,11 @@
                 //add multi scale tiled layer
                 .addTiledGridLayer(
                     //data URL
-                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/5000m/',
+                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/5000m/',
                     //the styles
                     [
                         new gviz.SquareColorWGLStyle({
-                            colorCol: '2018',
+                            colorCol: 'TOT_P_2021',
                             tFun: (value) => gviz.sExp(Math.min(value / 100000, 1), -15),
                         }),
                     ]

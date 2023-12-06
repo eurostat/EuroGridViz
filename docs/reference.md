@@ -31,6 +31,7 @@
     - [Side style](#side-style)
     - [Side category style](#side-category-style)
     - [Contour style](#contour-style)
+    - [Isometric fence style](#isometric-fence-style)
   - [Esthetic styles](#esthetic-styles)
     - [JoyPlot Style](#joyplot-style)
     - [Mosaic style](#mosaic-style)
@@ -38,7 +39,7 @@
     - [Lego style](#lego-style)
     - [Lego category style](#lego-category-style)
   - [Kernel smoothing](#kernel-smoothing)
-  - [Others styles](#others-styles)
+  - [Custom styles](#custom-styles)
   - [Legends](#legends)
     - [ColorCategoryLegend](#colorcategorylegend)
     - [ColorDiscreteLegend](#colordiscretelegend)
@@ -54,6 +55,7 @@
   - [Foreground information](#foreground-information)
     - [Showing labels](#showing-labels)
     - [Showing boundaries](#showing-boundaries)
+  - [Transparency](#transparency)
   - [Tooltip](#tooltip)
   - [Leaflet](#leaflet)
   - [Alright?](#alright)
@@ -97,18 +99,20 @@ new gviz.App(containerDiv)
 
 The following methods allow further configuration of a [Gridviz](https://github.com/eurostat/gridviz/) application:
 
-| Method                                                                      | Type                   | Default       | Description                                                                                                                                                                                                            |
-| --------------------------------------------------------------------------- | ---------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| _app_.**getGeoCenter**()<br />_app_.**setGeoCenter**([value])               | { x:number, y:number } | { x:0, y:0 }  | Get/set the geographical coordinates of the view center.                                                                                                                                                               |
-| _app_.**getZoomFactor**()<br />_app_.**setZoomFactor**([value])             | number                 | 1             | Get/set the view zoom. This zoom factor is expressed as the size of a pixel in ground distance.                                                                                                                        |
-| _app_.**getZoomFactorExtent**()<br />_app_.**setZoomFactorExtent**([value]) | Array(number)          | [0, Infinity] | Get/set the view zoom extent, in order to prevent the user to zoom in/out beyond some zoom levels.                                                                                                                     |
-| _app_.**getBackgroundColor**()<br />_app_.**setBackgroundColor**([value])   | string                 | "white"       | Get/set the map background color.                                                                                                                                                                                      |
-| _app_.**getBoundaryLayer**()<br />_app_.**setBoundaryLayer**([value])       | LineLayer / object     | undefined     | A layer for boundary lines, see [here](#showing-boundaries).                                                                                                                                                           |
-| _app_.**getLabelLayer**()<br />_app_.**setLabelLayer**([value])             | LabelLayer / object    | undefined     | A layer for labels (such as placenames), see [here](#showing-labels).                                                                                                                                                  |
-| _app_.**addBackgroundLayer**([options])                                     | object                 |               | Add a background image layer, see [here](#background-layer).                                                                                                                                                           |
-| _app_.**setViewFromURL**()                                                  |                        |               | Set view geo center and zoom from URL parameters _x_, _y_ and _z_. For example, using the URL _myPage.html?x=1000&y=2000&z=45_ will force the viex to center to geographical coordinates _(1000, 2000)_ and zoom _45_. |
-| _app_.**redraw**()                                                          |                        |               | Force the map to redraw.                                                                                                                                                                                               |
-| _app_.**destroy**()                                                         |                        |               | Destroy the app, canvas, legend and tooltip and remove their event listeners.                                                                                                                                          |
+| Method                                                                      | Type                                                                           | Default       | Description                                                                                        |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------- |
+| _app_.**getGeoCenter**()<br />_app_.**setGeoCenter**([value])               | { x:number, y:number }                                                         | { x:0, y:0 }  | Get/set the geographical coordinates of the view center.                                           |
+| _app_.**getZoomFactor**()<br />_app_.**setZoomFactor**([value])             | number                                                                         | 1             | Get/set the view zoom. This zoom factor is expressed as the size of a pixel in ground distance.    |
+| _app_.**getZoomFactorExtent**()<br />_app_.**setZoomFactorExtent**([value]) | Array(number)                                                                  | [0, Infinity] | Get/set the view zoom extent, in order to prevent the user to zoom in/out beyond some zoom levels. |
+| _app_.**getBackgroundColor**()<br />_app_.**setBackgroundColor**([value])   | string                                                                         | "white"       | Get/set the map background color.                                                                  |
+| _app_.**getBoundaryLayer**()<br />_app_.**setBoundaryLayer**([value])       | LineLayer / object                                                             | undefined     | A layer for boundary lines, see [here](#showing-boundaries).                                       |
+| _app_.**getLabelLayer**()<br />_app_.**setLabelLayer**([value])             | LabelLayer / object                                                            | undefined     | A layer for labels (such as placenames), see [here](#showing-labels).                              |
+| _app_.**addBackgroundLayer**([options])                                     | object                                                                         |               | Add a background image layer, see [here](#background-layer).                                       |
+| _app_.**addZoomButtons**([options])                                         | All properties are optional <br> {  **id**: `HTML element id`, **class**: `HTML element CSS class`, **x**: `CSS 'left' property`,  **y**: ```CSS 'top' property```,  **onZoom**: `Custom event handler when user clicks zoom in or out`,  <br /> **delta**: `The delta applied to each zoom event.`  } | {  **id**: 'gridviz-zoom-buttons',  **x**: app width - 50,   **y**: 10,  **onZoom**: undefined,  **delta**: 0.2  }| Add zoom in and zoom out buttons to the viewer. |
+| _app_.**addFullscreenButton**([options])                                         | All properties are optional <br>  {  **id**: `HTML element id`, **class**: `HTML element CSS class` **x**: `CSS 'left' property`,  **y**: ```CSS 'top' property``` } | {  **id**: 'gridviz-zoom-buttons',  **x**: app width - 50,  **y**: 10  }| Add a button to the viewer that toggles fullscreen mode. |
+| _app_.**setViewFromURL**() | | | Set view geo center and zoom from URL parameters _x_, _y_ and _z_. For example, using the URL _myPage.html?x=1000&y=2000&z=45_ will force the viex to center to geographical coordinates _(1000, 2000)_ and zoom _45_. |
+| _app_.**redraw**() | | | Force the map to redraw. |
+| _app_.**destroy**() | | | Destroy the app, canvas, legend and tooltip and remove their event listeners. |
 
 ### App options object
 
@@ -158,10 +162,12 @@ new gviz.App(containerDiv, {
 
 ## Multi layer, multi style and multi scale mapping
 
-A [Gridviz](https://github.com/eurostat/gridviz/) map is organised as a stack of layers accessible through **myApp.layer** field. Each layer shows data from one single dataset **myLayer.dataset**, following a list of styles **myLayer.styles**. The styles available are listed [here](#basic-styles). The map can adapt to the visualisation scale/zoom level with the following mechanisms:
+A [Gridviz](https://github.com/eurostat/gridviz/) map is organised as a stack of layers accessible through **myApp.layers** property. Each layer shows data from one single dataset **myLayer.dataset**, following a list of styles **myLayer.styles**. The map can adapt to the visualisation scale/zoom level with the following mechanisms:
 
 -   Multi-resolution datasets can be defined, so that different grid resolutions can be shown depending to the zoom level, see [the multi-scale datasets in the next section](#adding-data).
 -   The layers and styles can be restricted to some scale, using their **minZoom** and **maxZoom** properties to define the zoom ranges for which they will be shown.
+-   Most style parameters are not static values, but _functions_ of various parameters, including the map zoom factor, usually noted **zf** (for "zoom factor") which represent the size of a pixel screen in ground meter. Style parameters can thus be defined depending on the zoom level so that they adapt to the visualisation scale.
+-   Transparency can be defined at layer or style level with their **alpha** and **blendOperation** properties (see CanvasRenderingContext2D [globalAlpha](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalAlpha) and [globalCompositeOperation](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation) properties). These values are also not static, but functions of the zoom factor **zf**. It is thus possible to define the transparency depending on the zoom level,so that a layer or a style fades away when zooming in or out.
 
 For further information, see the [examples](../examples/).
 
@@ -225,11 +231,11 @@ new gviz.App(containerDiv)
     //add multi scale tiled layer
     .addTiledGridLayer(
         //data URL
-        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/5000m/',
+        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/5000m/',
         //the styles
         [
             new gviz.SquareColorWGLStyle({
-                colorCol: '2018',
+                colorCol: 'TOT_P_2021',
                 tFun: (value) => gviz.sExp(Math.min(value / 100000, 1), -15),
             }),
         ]
@@ -253,11 +259,11 @@ new gviz.App(containerDiv)
         [5000, 10000, 20000, 50000, 100000],
         //function which returns the URL for each resolution value
         (r) =>
-            'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' + r + 'm/',
+            'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + r + 'm/',
         //the styles
         [
             new gviz.SquareColorWGLStyle({
-                colorCol: '2018',
+                colorCol: 'TOT_P_2018',
                 tFun: (value, resolution, stats) => gviz.sExp(value / stats.max, -50),
             }),
         ],
@@ -299,7 +305,7 @@ Input data can be processed/transformed before it is being used by the [Gridviz]
 
 This process is run on each cell individually, only once, after the data has been downloaded.
 
-Here is an example showing how to compute a new column on population change, as the difference between two columns _2011_ and _2018_. This new column is then used directly to be shown on the map:
+Here is an example showing how to compute a new column on population change, as the difference between two columns _TOT_P_2021_ and _TOT_P_2011_. This new column is then used directly to be shown on the map:
 
 ```javascript
 new gviz.App(containerDiv)
@@ -308,7 +314,7 @@ new gviz.App(containerDiv)
     .addMultiScaleTiledGridLayer(
         [1000, 2000, 5000, 10000, 20000, 50000, 100000],
         (r) =>
-            'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population/' + r + 'm/',
+            'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + r + 'm/',
         [
             new gviz.ShapeColorSizeStyle({
                 /* style construction ... */
@@ -316,15 +322,16 @@ new gviz.App(containerDiv)
         ],
         {
             preprocess: (c) => {
-                //for each cell, compute 2011 -> 2018 change and store it in a new "change" column
-                if (!c['2011'] && !c['2018']) c.change = 0
-                else if (!c['2011'] && c['2018']) c.change = +c['2018']
-                else if (c['2011'] && !c['2018']) c.change = -c['2011']
-                else c.change = c['2018'] - c['2011']
+                //for each cell, compute 2011 -> 2021 change and store it in a new "change" column
+                if (!c.TOT_P_2011 && !c.TOT_P_2021) c.change = 0
+                else if (!c.TOT_P_2011 && c.TOT_P_2021) c.change = +c.TOT_P_2021
+                else if (c.TOT_P_2011 && !c.TOT_P_2021) c.change = -c.TOT_P_2011
+                else c.change = c.TOT_P_2021 - c.TOT_P_2011
                 //remove unused information
-                delete c['2006']
-                delete c['2011']
-                delete c['2018']
+                delete c.TOT_P_2006
+                delete c.TOT_P_2011
+                delete c.TOT_P_2018
+                delete c.TOT_P_2021
             },
             pixNb: 3,
         }
@@ -376,12 +383,10 @@ See [this example with changing size and color](https://eurostat.github.io/gridv
 
 See [this example with random shape, color and size](https://eurostat.github.io/gridviz/examples/styles/shapecolorsize_random.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/shapecolorsize_random.html)).
 
-See [this example with transparency](https://eurostat.github.io/gridviz/examples/styles/shapecolorsize_transparency.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/shapecolorsize_transparency.html)).
-
 | Property     | Type                      | Default                 | Description                                                                                                                           |
-| ------------ | ------------------------- | ----------------------- | ----------------- |
+| ------------ | ------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | **colorCol** | string                    | undefined               | The name of the column used for the color.                                                                                            |
-| **color**    | function(v,r,s,zf):string    | (v,r,s,zf) => "#EA6BAC" | A function computing the cell color from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**. |
+| **color**    | function(v,r,s,zf):string | (v,r,s,zf) => "#EA6BAC" | A function computing the cell color from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**. |
 | **sizeCol**  | string                    | undefined               | The name of the column used for the size.                                                                                             |
 | **size**     | function(v,r,s,zf):number | (v,r,s,zf) => r         | A function computing the cell size from its **sizeCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.   |
 | **shape**    | function(c):string        | () => "square"          | A function computing the shape of cell **c**. Expected values are within _{"square", "circle", "diamond", "donut", "none"}_           |
@@ -396,8 +401,6 @@ This style displays each cell as a square, with a changing color. This style use
 See [this basic example](https://eurostat.github.io/gridviz/examples/styles/squarecolorwgl.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/squarecolorwgl.html)).
 
 See [this example with dark style](https://eurostat.github.io/gridviz/examples/styles/squarecolorwgl_dark.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/squarecolorwgl_dark.html)).
-
-See [this example with transparency](https://eurostat.github.io/gridviz/examples/styles/squarecolorwgl_transparency.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/squarecolorwgl_transparency.html)).
 
 | Property       | Type                       | Default                                                                                             | Description                                                                                                                                                                                                                                                                                                      |
 | -------------- | -------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -459,14 +462,14 @@ See [this basic example](https://eurostat.github.io/gridviz/examples/styles/segm
 
 See [this example with random segment orientation, color, length and width](https://eurostat.github.io/gridviz/examples/styles/segment_random.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/segment_random.html)).
 
-| Property        | Type                      | Default         | Description                                                                                                                 |
-| --------------- | ------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **orientation** | function(c):number        | () => 0         | A function computing the orientation (in degrees) of the segment representing a cell **c**.                                 |
-| **colorCol**    | string                    | undefined       | The name of the column used for the color.                                                                                  |
-| **color**       | function(v,r,s):string    | () => "#EA6BAC" | A function computing the cell color from its **colorCol** value **v**, the resolution **r**, and statistics **s**.          |
-| **lengthCol**   | string                    | undefined       | The name of the column used for the segment length.                                                                         |
+| Property        | Type                      | Default         | Description                                                                                                                                |
+| --------------- | ------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **orientation** | function(c):number        | () => 0         | A function computing the orientation (in degrees) of the segment representing a cell **c**.                                                |
+| **colorCol**    | string                    | undefined       | The name of the column used for the color.                                                                                                 |
+| **color**       | function(v,r,s):string    | () => "#EA6BAC" | A function computing the cell color from its **colorCol** value **v**, the resolution **r**, and statistics **s**.                         |
+| **lengthCol**   | string                    | undefined       | The name of the column used for the segment length.                                                                                        |
 | **length**      | function(v,r,s,zf):number | (v,r,s,zf) => r | A function computing the segment length from its **lengthCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**. |
-| **widthCol**    | string                    | undefined       | The name of the column used for the segment width.                                                                          |
+| **widthCol**    | string                    | undefined       | The name of the column used for the segment width.                                                                                         |
 | **width**       | function(v,r,s,zf):number | (v,r,s,zf) => r | A function computing the segment width from its **widthCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.   |
 
 ### Stroke style
@@ -538,7 +541,7 @@ See [this example with random colors](https://eurostat.github.io/gridviz/example
 [![pillars style](img/styles/pillar.png)](https://eurostat.github.io/gridviz/examples/styles/pillar.html)
 [![pillars style](img/styles/pillar_simple.png)](https://eurostat.github.io/gridviz/examples/styles/pillar_simple.html)
 
-This style shows the grid cells as 3D pillars or bars, with changeable heigth, width and color.
+This style shows the grid cells as 3D pillars or, with changeable heigth, width and color.
 
 See [this basic example](https://eurostat.github.io/gridviz/examples/styles/pillar.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/pillar.html)).
 
@@ -573,9 +576,9 @@ See [this basic example](https://eurostat.github.io/gridviz/examples/styles/text
 
 See [this example](https://eurostat.github.io/gridviz/examples/styles/text.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/text.html)).
 
-| Property        | Type                      | Default                  | Description              |
-| --------------- | ------------------------- | ------------------------ | ------------------------------------ |
-| **textCol**     | string          | undefined                | The name of the column/attribute of the tabular data where to retrieve the variable for text.        |
+| Property        | Type                      | Default                  | Description                                                                                                                                                   |
+| --------------- | ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **textCol**     | string                    | undefined                | The name of the column/attribute of the tabular data where to retrieve the variable for text.                                                                 |
 | **text**        | function(v,r,s,zf):string | (v, r, s, z) => "X"      | A function returning the text of a cell from its **textCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.                      |
 | **colorCol**    | string                    | undefined                | The name of the column/attribute of the tabular data where to retrieve the variable for color.                                                                |
 | **color**       | function(v,r,s,zf):string | () => "#EA6BAC"          | A function returning the color of the cell from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.                  |
@@ -592,20 +595,19 @@ This style shows the grid cells as a time series chart. It is particulary suitab
 
 See [this basic example](https://eurostat.github.io/gridviz/examples/styles/time_series.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/time_series.html)).
 
-
-| Property        | Type                      | Default                  | Description              |
-| --------------- | ------------------------- | ------------------------ | ------------------------------------ |
-| **ts**     | Array(string)          | undefined       | The columns of the time series, ordered in chronological order. Note that the style currently requires full time series, without missing data.  |
-| **offsetX**     | function(c,r,zf):string         | ()=>0         | A fonction computing the offset along X axis, in geographical unit, from origin point (lower left cell corner). This value is computed from the cell **c**, resolution **r** and zoom factor **zf**.   |
-| **width**     | function(c,r,zf):string          | ()=>r        | A fonction computing the chart width, in geographical unit. This value is computed from the cell **c**, resolution **r** and zoom factor **zf**.  |
-| **offsetY**     | function(c,r,zf):string          | ()=>0     | Same as **offsetX** but along Y axis.     |
-| **height**     | function(c,r,zf):string          | ()=>r  | Same as **width**, but for the chart height.  |
-| **anchorModeY**     | function(c,r,zf):string  | (c, r, zf) => "center"     | The anchor mode along Y axis: *first* to anchor to the first value, *last* for the last, *bottom* to anchor the minimum value to the bottom, *top* to anchor the maximum value to the top, *center* to center the chart along Y axis.  |
-| **lineWidthCol**     | string  | undefined    | The name of the column used for the line width.  |
-| **lineWidth**     | string   | (v, r, s, z) => 1.5 * z   | A function computing the cell chart line width in geographical unit from its **sizeCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.  |
-| **colorCol**     | string  | undefined    | The name of the column used for the color. |
-| **color**     | string  | (v, r, s, zf) => 'black'       | A function computing the cell chart color from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.  |
-
+| Property         | Type                     | Default                                                      | Description                                                                                                                                                                                                                           |
+| ---------------- | ------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ts**           | Array(string)            | undefined                                                    | The columns of the time series, ordered in chronological order. Note that the style currently requires full time series, without missing data.                                                                                        |
+| **noData**       | function(string):boolean | (v) => v === undefined or v == "" or v === null or isNaN(+v) | A function specifying when a value should be considered as "no data" and thus not ignored. The line will have a break at these values.                                                                                                |
+| **offsetX**      | function(c,r,zf):string  | ()=>0                                                        | A fonction computing the offset along X axis, in geographical unit, from origin point (lower left cell corner). This value is computed from the cell **c**, resolution **r** and zoom factor **zf**.                                  |
+| **width**        | function(c,r,zf):string  | ()=>r                                                        | A fonction computing the chart width, in geographical unit. This value is computed from the cell **c**, resolution **r** and zoom factor **zf**.                                                                                      |
+| **offsetY**      | function(c,r,zf):string  | ()=>0                                                        | Same as **offsetX** but along Y axis.                                                                                                                                                                                                 |
+| **height**       | function(c,r,zf):string  | ()=>r                                                        | Same as **width**, but for the chart height.                                                                                                                                                                                          |
+| **anchorModeY**  | function(c,r,zf):string  | (c, r, zf) => "center"                                       | The anchor mode along Y axis: _first_ to anchor to the first value, _last_ for the last, _bottom_ to anchor the minimum value to the bottom, _top_ to anchor the maximum value to the top, _center_ to center the chart along Y axis. |
+| **lineWidthCol** | string                   | undefined                                                    | The name of the column used for the line width.                                                                                                                                                                                       |
+| **lineWidth**    | string                   | (v, r, s, z) => 1.5 \* z                                     | A function computing the cell chart line width in geographical unit from its **sizeCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.                                                                  |
+| **colorCol**     | string                   | undefined                                                    | The name of the column used for the color.                                                                                                                                                                                            |
+| **color**        | string                   | (v, r, s, zf) => 'black'                                     | A function computing the cell chart color from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.                                                                                           |
 
 ## Side styles
 
@@ -651,6 +653,25 @@ This style is experimental / under development. It displays the sides of the cel
 
 See [this example](https://eurostat.github.io/gridviz/examples/styles/side_contour.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/side_contour.html)).
 
+### Isometric fence style
+
+[![Isometric fence style](img/styles/isofence.png)](https://eurostat.github.io/gridviz/examples/styles/isofence.html)
+
+This style shows the composition of a total quantity into categories as vertical cross-sections oriented toward North-South and East-West. It is an alternative to [composition style](#composition-style). It may also be seen as a bi-directional [joyplot style](#joyplot-style) showing categories - note that when **angle** value is set to 90°, the style is equivalent to a joyplot. This style was inspired by the [USGS geologic isometric fence diagrams (1953)](https://pubs.usgs.gov/pp/0228/).
+
+See [this example](https://eurostat.github.io/gridviz/examples/styles/isofence.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/isofence.html)).
+
+| Property              | Type                              | Default                                                | Description                                                                                                                             |
+| --------------------- | --------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| color                 | object                            |                                                        | The dictionary (string -> color) which give the color of each category.                                                                 |
+| heightCol             | string                            |                                                        | The column where to get the height values.                                                                                              |
+| height                | function(v,r,s,zf):number         | (v, r, s, zf) => r \* 0.4                              | A function returning the height of a cell from its value **v**, the resolution **r**, some statistics **s** and the zoom factor **zf**. |
+| angle                 | number                            | 50                                                     | The isometric perspective angle, in degree, within [-180,180].                                                                          |
+| cornerLineStrokeColor | function(cell,r,zf,angle): string | (c, r, zf, angle) => "#999"                            | A function returning the corner line stroke style.                                                                                      |
+| cornerLineWidth       | function(cell,r,zf,angle): number | (c, r, zf, angle) => (angle % 90 == 0 ? 0 : 0.8 \* zf) | A function returning the corner line width.                                                                                             |
+| sVert                 | boolean                           | true                                                   | Show vertical cross-sections.                                                                                                           |
+| sHor                  | boolean                           | true                                                   | Show horizontal cross-sections.                                                                                                         |
+
 ## Esthetic styles
 
 ### JoyPlot Style
@@ -659,7 +680,7 @@ See [this example](https://eurostat.github.io/gridviz/examples/styles/side_conto
 [![joyplot style](img/styles/joyplot_full.png)](https://eurostat.github.io/gridviz/examples/styles/joyplot_shading.html)
 [![joyplot style](img/styles/joyplot_random.png)](https://eurostat.github.io/gridviz/examples/styles/joyplot_random.html)
 
-This style shows cell rows in the form of a 'joyplot' - named after Joy Division's "Unknown Pleasures" album cover.
+This style shows cell rows in the form of a 'joyplot' - named after Joy Division's "Unknown Pleasures" album cover. For joyplot style showing composition by categories, or for various orientations and perspective angles, see [isometric fence style](#isometric-fence-style).
 
 See [this basic example](https://eurostat.github.io/gridviz/examples/styles/joyplot.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/styles/joyplot.html)).
 
@@ -711,7 +732,7 @@ See [this other example](https://eurostat.github.io/gridviz/examples/styles/ninj
 | **color**    | function(v,r,s):string    | (v,r,s,zf) => "#EA6BAC" | A function computing the cell color from its **colorCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**.                                                                       |
 | **sizeCol**  | string                    | undefined               | The name of the column used for the size.                                                                                                                                                                   |
 | **size**     | function(v,r,s,zf):number | (v,r,s,zf) => t         | A function computing the cell size, within [0,1], from its **sizeCol** value **v**, the resolution **r**, statistics **s** and zoom factor **zf**. 1 corresponds to a square, 0 to an infinitly thin cross. |
-| **shape**    | function(c):string        | () => "o"               | A function computing the orientation of the ninja star: _"o"_ for 45deg oblique star, _"p"_ for a star parallel to the x/y axes.                                                                            |
+| **shape**    | function(c):string        | (c) => "o"              | A function computing the orientation of the ninja star of a cell **c**: _"o"_ for 45deg oblique star, _"p"_ for a star parallel to the x/y axes.                                                            |
 
 ### Lego style
 
@@ -768,11 +789,52 @@ See [this example](https://eurostat.github.io/gridviz/examples/styles/kernelsmoo
 
 The kernel smoothing computation relies on the [fast-kde](https://www.npmjs.com/package/fast-kde) library, which produces smoothing approximation very fast. Note that the approximation degrades significantly for weak smoothing (for low sigma values).
 
-## Others styles
+## Custom styles
 
-[Gridviz](https://github.com/eurostat/gridviz/) style library can easily be enriched with new styles, by extending the [style class](../src/Style.js).
+Any need or idea for a new style ? feel free to [ask](https://github.com/eurostat/gridviz/issues/new) or [contribute](../README.md#support-and-contribution) !
 
-Any need or idea for new style ? feel free to [ask](https://github.com/eurostat/gridviz/issues/new) or [contribute](../README.md#support-and-contribution) !
+[![custom style arrow](img/styles/custom.png)](https://eurostat.github.io/gridviz/examples/custom_style.html)
+
+[Gridviz](https://github.com/eurostat/gridviz/) style library can easily be extended with new styles. See for example this custom style defined to draw cells as an arrow with a color depending on a statistical value `population`:
+
+```javascript
+//create custom style
+const customStyle = new gviz.Style({
+
+//define draw function
+drawFun : (cells, resolution, cg) => {
+    //draw with HTML canvas in geo coordinates
+    cg.setCanvasTransform()
+
+    //draw each cell as an arrow
+    //with a fill color depending on the property "population"
+    for (let cell of cells) {
+        //do not draw cells with no data or no population
+        if (!cell.population) continue
+
+        //set fill color as a shade from cyan to red depending on "population" property
+        const t = Math.floor((255 * Math.round(Math.pow(cell.population / 1000000, 1 / 5) * 6)) / 6)
+        cg.ctx.fillStyle = 'rgb(' + t + ',' + (255 - t) + ',' + (255 - t) + ')'
+
+        //fill arrow
+        cg.ctx.beginPath()
+        //left point
+        cg.ctx.moveTo(cell.x, cell.y)
+        //bottom center point
+        cg.ctx.lineTo(cell.x + resolution / 2, cell.y + resolution / 3)
+        //right point
+        cg.ctx.lineTo(cell.x + resolution, cell.y)
+        //top center point
+        cg.ctx.lineTo(cell.x + resolution / 2, cell.y + (resolution * 4) / 3)
+        cg.ctx.fill()
+    }
+}
+})
+```
+
+See [online](https://eurostat.github.io/gridviz/examples/custom_style.html) ([code](https://github.com/eurostat/gridviz/blob/master/examples/custom_style.html)).
+
+For more examples and inspiration, have a look at the code of existing styles [**here**](https://github.com/eurostat/gridviz/tree/master/src/style).
 
 ## Legends
 
@@ -866,7 +928,7 @@ new gviz.SegmentOrientationLegend({
 
 ```javascript
 new gviz.SegmentWidthLegend({
-    title: 'Population in 2018',
+    title: 'Population in 2021',
     labelUnitText: 'inhab.',
 })
 ```
@@ -899,16 +961,16 @@ new gviz.SizeLegend({
 
 ## Stretching
 
-Most of the [Gridviz](https://github.com/eurostat/gridviz/) styling rely on a **t** parameter within [0,1], which is mapped to a visual variable such as color or size. In order to better adjust the variation of this **t** parameter to the input data distribution, one of the _stretching functions_ listed below can be used. These functions have different properties and should be chosen according to the data. The amplitude of the stretching can be adjusted with a **alpha** parameter.
+Most of [Gridviz](https://github.com/eurostat/gridviz/) styles rely on a continuous mapping from a statistical variable to a visual variable (color, size, etc.). The statistical distribution can be stretched with one of the _stretching functions_ listed below can be used. These functions have different properties and should be chosen according to the data distribution. The amplitude of the stretching can be adjusted with a parameter.
 
-| Stretching function | Alpha                                    | Description           | Inverse function   |
-| ------------------- | ---------------------------------------- | --------------------- | ------------------ |
-| **sPow**            | From 0 to Infinity. No change: 1         | Polynomial            | **sPowInverse**    |
-| **sPowRev**         | From 0 to Infinity. No change: 1         | Polynomial reverse    | **sPowRevInverse** |
-| **sExp**            | From -Infinity to Infinity. No change: 0 | Exponential           | **sExpInverse**    |
-| **sExpRev**         | From -Infinity to Infinity. No change: 0 | Exponential reverse   | **sExpRevInverse** |
-| **sCircularLow**    | From 0 (no change) to 1 (circle)         | Circular, low values  | **sCircularHigh**  |
-| **sCircularHigh**   | From 0 (no change) to 1 (circle)         | Circular, high values | **sCircularLow**   |
+| Stretching function | Description           | Stretching parameter                                    |
+| ------------------- | ---------------------------------------- | --------------------- |
+| **powerScale**            | Polynomial function            | Power exponent, from 0 to Infinity. No change: 1         |
+| **logarithmicScale**            | Exponential function           | Logarithmic base, from -Infinity to Infinity. No change: 0 |
+| **powerInverseScale**            | Polynomial inverse function    | Power exponent, from 0 to Infinity. No change: 1         |
+| **exponentialScale**         | Exponential    | Logarithmic base, from -Infinity to Infinity. No change: 0 |
+| **circularScale**         | Circular    | 0: no stretching. 1: perfect circle section |
+| **circularInverseScale**         | Circular    | 0: no stretching. 1: perfect circle section |
 
 For more information on these functions and an overview of how they differ, see:
 
@@ -1015,7 +1077,7 @@ new gviz.App(containerDiv)
 
 Input data need to be as a CSV table. Each row should correspond to a label, with a _x_ and _y_ column for the label position, and a _name_ column for the text to write. The data can be restructured on the fly after loading to meet this requirement using the **preprocess** function.
 
-For European grids based on ETRS89-LAEA CRS, the **gviz.getEuronymeLabelLayer()** function returns ready-to-use label layer settings based on [Euronym](https://github.com/eurostat/euronym) which allow zoom dependant label selection.
+For European grids based on ETRS89-LAEA CRS, the **gviz_es.getEuronymeLabelLayer()** function from [gridviz-eurostat](https://github.com/eurostat/gridviz-eurostat) module returns ready-to-use label layer settings based on [Euronym](https://github.com/eurostat/euronym) which allow zoom dependant label selection.
 
 The **setLabelLayer** method has the following parameters:
 
@@ -1075,7 +1137,7 @@ new gviz.App(containerDiv)
 
 Input data are structured as a _GeoJSON FeatureCollection_ of linear features.
 
-The **gviz.getEurostatBoundariesLayer()** function returns ready-to-use boundary layer settings based on [Nuts2json](https://github.com/eurostat/Nuts2json) datasets.
+The **gviz_es.getEurostatBoundariesLayer()** function from [gridviz-eurostat](https://github.com/eurostat/gridviz-eurostat) module returns ready-to-use boundary layer settings based on [Nuts2json](https://github.com/eurostat/Nuts2json) datasets.
 
 The **setBoundaryLayer** method has the following parameters:
 
@@ -1088,6 +1150,8 @@ The **setBoundaryLayer** method has the following parameters:
 | **lineDash**   | function(bn,zf):string | (f, zf) => undefined | A function returning the dash model of the boundary **bn** for zoom factor **zf**.                                                                                                                                                                                                  |
 
 For more information, [see the code](../src/LineLayer.js).
+
+## Transparency
 
 ## Tooltip
 

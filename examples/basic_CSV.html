@@ -12,7 +12,7 @@
         <script>
             let containerDiv = document.getElementById('viz-container')
 
-            new gviz.App(containerDiv)
+            new gviz.App(containerDiv, {backgroundColor: '#ffffff'})
                 //set position and zoom
                 .setGeoCenter({ x: 4500000, y: 2900000 })
                 .setZoomFactor(3000)
@@ -26,7 +26,8 @@
                     [
                         new gviz.SquareColorWGLStyle({
                             colorCol: 'population',
-                            tFun: (value) => gviz.sExp(Math.min(value / 100000, 1), -15),
+                            colors:["#040613","#292851","#3F4B96","#427BB7","#61A8C7","#9AD3DA","#EAFDFD"],
+                            tFun: (value) => gviz.sExp(Math.min(value / 200000, 1), -10),
                         }),
                     ]
                 )

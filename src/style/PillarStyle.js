@@ -36,7 +36,7 @@ export class PillarStyle extends Style {
         this.width = opts.width || ((v, r) => 0.5 * r)
 
         /** @type {boolean} */
-        this.simple = opts.simple != undefined
+        this.simple = opts.simple == true
 
         /** @type {number} */
         this.viewHeightFactor = opts.viewHeightFactor || 1.5

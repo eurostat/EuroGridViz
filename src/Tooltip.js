@@ -28,7 +28,7 @@ export class Tooltip {
         /** @type {string} */
         this.border = opts.border || '0px'
         /** @type {string} */
-        this['border-radius'] = opts['border-radius'] || '5px'
+        this['border-radius'] = opts['border-radius'] || '0px'
         /** @type {string} */
         this['box-shadow'] = opts['box-shadow'] || '5px 5px 5px grey'
         /** @type {string} */
@@ -51,14 +51,16 @@ export class Tooltip {
          * @public
          * @type {import("d3-selection").Selection} */
         this.tooltip = select('#' + this.div)
-        if (this.tooltip.empty())
-            this.tooltip = select(
-                '#' + this.parentElement.id && this.parentElement.id != ''
-                    ? '#' + this.parentElement.id
-                    : 'body'
-            )
-                .append('div')
-                .attr('id', this.div)
+
+        if (this.tooltip.empty()) {
+            //create tooltip DOM node
+            // this.tooltip = select(
+            //     '#' + this.parentElement.id && this.parentElement.id != ''
+            //         ? '#' + this.parentElement.id
+            //         : 'body'
+            // )
+            this.tooltip = select('body').append('div').attr('id', this.div)
+        }
 
         //initialise
         this.tooltip.style('max-width', this.maxWidth)
@@ -73,6 +75,7 @@ export class Tooltip {
         this.tooltip.style('position', 'absolute')
         this.tooltip.style('pointer-events', 'none')
         this.tooltip.style('opacity', '0')
+        this.tooltip.style('text-wrap', 'nowrap')
 
         // aria-labels (thanks to wahlatlas)
         this.tooltip.attr('role', 'tooltip').attr('aria-live', 'polite')
@@ -105,9 +108,10 @@ export class Tooltip {
     setPosition(event) {
         let parentRect = this.parentElement.getBoundingClientRect()
 
-        this.tooltip
-            .style('left', event.pageX - parentRect.left + this.xOffset + 'px')
-            .style('top', event.pageY - parentRect.top - this.yOffset + 'px')
+        let x = event.pageX + this.xOffset
+        let y = event.pageY - this.yOffset
+
+        this.tooltip.style('left', x + 'px').style('top', y + 'px')
 
         this.ensureTooltipInsideContainer(event, parentRect)
     }
@@ -148,25 +152,31 @@ export class Tooltip {
      * @param {DOMRect} parentRect
      */
     ensureTooltipInsideContainer = function (event, parentRect) {
-        let ttNode = this.tooltip.node()
+        let node = this.tooltip.node()
+        let parentWidth = parentRect.width
+        let parentHeight = parentRect.height
 
         //too far right
-        let maxRight = parentRect.width
-        let ttRight = ttNode.offsetLeft + ttNode.clientWidth
-        if (ttRight > maxRight) {
-            let left = event.pageX - parentRect.left - ttNode.clientWidth - this.xOffset
-            ttNode.style.left = left + 'px'
+        if (node.offsetLeft > parentRect.left + parentWidth - node.clientWidth) {
+            let left = event.x - node.clientWidth - this.xOffset
+            node.style.left = left + 'px'
             // check if mouse covers tooltip
-            if (ttNode.offsetLeft + ttNode.clientWidth + parentRect.left > event.pageX) {
+            if (node.offsetLeft + node.clientWidth > event.x) {
                 //move tooltip left so it doesnt cover mouse
-                let left2 = event.pageX - (ttNode.clientWidth + this.xOffset + parentRect.left)
-                ttNode.style.left = left2 + 'px'
+                let left2 = event.x - node.clientWidth - this.xOffset
+                node.style.left = left2 + 'px'
             }
+            // node.style.top = node.offsetTop + config.yOffset + "px";
         }
 
         //too far down
-        if (ttNode.offsetTop + ttNode.clientHeight > parentRect.height) {
-            ttNode.style.top = ttNode.offsetTop - ttNode.clientHeight + 'px'
+        if (node.offsetTop + node.clientHeight > parentRect.top + parentHeight) {
+            node.style.top = node.offsetTop - node.clientHeight + 'px'
+        }
+
+        //too far up
+        if (node.offsetTop < parentRect.top) {
+            node.style.top = parentRect.top + this.yOffset + 'px'
         }
     }
 }

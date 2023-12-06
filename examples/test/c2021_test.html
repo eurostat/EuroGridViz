@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+
+<head>
+    <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+    <title>Gridviz - Custom style</title>
+</head>
+
+<body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
+    <div id="viz-container" style="height: 100%; width: 100%"></div>
+
+    <div style="
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        width: auto;
+        height: auto;
+        padding: 10px;
+        border: 0px;
+        border-radius: 5px;
+        background: #ffffffcc;
+        line-height: 1.6;
+        box-shadow: 5px 5px 5px grey;
+    ">
+        <div id="layer">
+            <span style="font-size: 1.2em">
+                <input type="radio" name="layer" id="pop" value="pop" checked />
+                <label for="pop">Total population</label>
+                <br />
+                <input type="radio" name="layer" id="sex" value="sex" />
+                <label for="sex">Sex</label>
+                <br />
+                <input type="radio" name="layer" id="emp" value="emp" />
+                <label for="emp">Employment</label>
+                <br />
+                <input type="radio" name="layer" id="age" value="age" />
+                <label for="age">Age</label>
+                <br />
+                <input type="radio" name="layer" id="mobility" value="mobility" />
+                <label for="mobility">Mobility</label>
+                <br />
+                <input type="radio" name="layer" id="pob" value="pob" />
+                <label for="pob">Birth place</label>
+                <br />
+            </span>
+        </div>
+        <span style="font-size: 1.2em">
+            <hr />
+            <input type="checkbox" id="label" checked />
+            <label for="label">City names</label><br />
+            <input type="checkbox" id="boundary" checked />
+            <label for="boundary">Boundaries</label><br />
+            <input type="checkbox" id="background" checked />
+            <label for="background">Background</label>
+        </span>
+    </div>
+
+    <script src="../../dist/gridviz.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-format@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-scale@4"></script>
+    <script>
+        let containerDiv = document.getElementById('viz-container')
+
+        //generic function for continuous color maps
+        //valueFunction, colorRamp, stretching
+        const colorContinuousScale = (opts) => {
+            const valueFunction = opts.valueFunction
+            const colorRamp = opts.colorRamp || (() => "purple")
+            const stretching = opts.stretching
+            return (cells, r, zf) => {
+                const domain = d3.extent(cells, valueFunction)
+                const scale = t => {
+                    //scale to [0,1]
+                    t = (t - domain[0]) / (domain[1] - domain[0])
+                    //stretch
+                    if (stretching) t = stretching(t)
+                    return colorRamp(t)
+                }
+                //scale.domain(d3.extent(cells, valueFunction))
+                return scale;
+            }
+        }
+
+        //generic function for quantile color maps
+        //valueFunction, classNumber, colorRamp
+        const colorQuantileScale = (opts) => {
+            const valueFunction = opts.valueFunction
+            const classNumber = opts.classNumber || 12
+            const colorRamp = opts.colorRamp || (() => "purple")
+            const scale = d3.scaleQuantile().range(Array.from({ length: classNumber }, (_, i) => colorRamp(i / (classNumber - 1))))
+            return (cells) => {
+                scale.domain(cells.map(valueFunction));
+                return scale;
+            }
+        }
+
+        //generic function for size map
+        //valueFunction, minValue, minSizePix, maxSizeFactor, stretching
+        const sizeContinuousScale = (opts) => {
+            const valueFunction = opts.valueFunction
+            const minValue = opts.minValue || 0
+            const minSizePix = opts.minSizePix || 0
+            const maxSizeFactor = opts.minSizePix || 1.41
+            const stretching = opts.stretching
+            return (cells, r, zf) => {
+                const domain = [minValue, d3.max(cells, valueFunction)]
+                const range = [minSizePix * zf, r * maxSizeFactor]
+                const scale = t => {
+                    //scale to [0,1]
+                    t = (t - domain[0]) / (domain[1] - domain[0])
+                    //stretch
+                    if (stretching) t = stretching(t)
+                    //scale to range
+                    return range[0] + t * (range[1] - range[0])
+                }
+                return scale;
+            }
+        }
+
+        //generic function for size map - quantile
+        //valueFunction, classNumber, minSizePix, maxSizeFactor
+        const sizeQuantileScale = (opts) => {
+            const valueFunction = opts.valueFunction
+            const classNumber = opts.classNumber || 12
+            const minSizePix = opts.minSizePix || 1
+            const maxSizeFactor = opts.maxSizeFactor || 1
+            const scale = d3.scaleQuantile()
+            return (cells, r, zf) => {
+                scale.domain(cells.map(valueFunction))
+                const minSizeGeo = minSizePix * zf, maxSizeGeo = r * maxSizeFactor
+                scale.range(Array.from({ length: classNumber }, (_, i) => minSizeGeo + i * (maxSizeGeo - minSizeGeo) / (classNumber - 1)))
+                return scale;
+            }
+        }
+
+
+        //combine scales
+        const viewScaleCombination = (obj) => {
+            //obj: prop and a function to call
+            return (cells, r, zf) => {
+                const out = {}
+                for (const p in obj) { out[p] = obj[p](cells, r, zf) }
+                return out
+            }
+        }
+
+
+
+        /*
+        "T" >= Total population
+
+        "F" >= Women
+        "M" >= Men
+
+        "Y_LT15" >= Age under 15 years
+        "Y15-64" >= Age 15 to 64 years
+        "Y_GE65" >= Age 65 years and older
+
+        "EMP" >= Employed (working population)
+
+        "NAT" >= Born in the country
+        "EU_OTH" >= Born in another EU member state
+        "OTH" >= Born outside the EU
+
+        "SAME" >= Residence unchanged (as of January 1, 2021, compared to January 1, 2020)
+        "CHG_IN" >= Moved within the Netherlands (as of January 1, 2021, compared to January 1, 2020)
+        "CHG_OUT" >= Moved from outside the Netherlands (as of January 1, 2021, compared to January 1, 2020)
+        */
+
+        //build application
+        const app = new gviz.App(containerDiv)
+            .setGeoCenter({ x: 4598000, y: 2715000 })
+            .setZoomFactor(700)
+            .setLabelLayer(gviz_es.getEuronymeLabelLayer())
+            .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
+            .setViewFromURL()
+            .addBackgroundLayer({
+                url: "https://gisco-services.ec.europa.eu/maps/tiles/OSMPositronBackground/EPSG3035/",
+                resolutions: [156543.03392804097, 78271.51696402048, 39135.75848201024, 19567.87924100512, 9783.93962050256, 4891.96981025128, 2445.98490512564, 1222.99245256282, 611.49622628141, 305.748113140705, 152.8740565703525, 76.43702828517625, 38.21851414258813, 19.109257071294063, 9.554628535647032, 4.777314267823516, 2.388657133911758, 1.19432856695, 0.597164283477939],
+                origin: [0, 6000000],
+                maxZoom: 50,
+            })
+            .addBackgroundLayer({
+                url: 'https://raw.githubusercontent.com/jgaffuri/mbxyz/main/pub/elevation_shading/',
+                resolutions: Array.from({ length: 9 }, (_, i) => 28.00132289714475 * Math.pow(2, 10 - i)),
+                origin: [0, 6000000],
+                filterColor: (zf) => '#ffffffc0',
+                minZoom: 50,
+            })
+
+
+        //prepare dataset
+        const dataset = app.makeMultiScaleTiledGridDataset(
+            [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+            (r) =>
+                'http://localhost:1234/' +
+                r +
+                'm/',
+            {
+                preprocess: (c) => {
+                    if (!c.T || +c.T == 0) return false
+
+                    //male/female index
+                    //if (+c.F + +c.M != c.T) console.error("Error found in sex total")
+                    c.indMF = +c.M - (+c.F)
+                    c.indMF = (100 * c.indMF) / (+c.M + +c.F)
+                    if (isNaN(c.indMF)) c.indMF = 0
+
+                    //employment
+                    c.remp = c.EMP / c.T * 100
+                    if (c.remp < 0 || c.remp > 100) console.log("Unexpected employment rate: " + c.remp, c.EMP, c.T)
+                    c.remp = c.remp > 100 ? 100 : c.remp < 0 ? 0 : c.remp
+                }
+            }
+        )
+
+
+        //
+        const update = () => {
+            //read GUI selection
+            const layCode = document.querySelector('input[name="layer"]:checked').value
+
+            //remove layers
+            app.layers = []
+
+            //formater
+            //const f1 = d3.format('.1f')
+
+            //set layer
+            if (layCode === 'pop') {
+
+                app.addLayerFromDataset(
+                    dataset,
+                    [
+                        new gviz.ShapeColorSizeStyle_({
+                            color: (c, r, zf, scale) => scale(c.T),
+                            viewScale: colorContinuousScale({ valueFunction: (c) => +c.T, colorRamp: d3.interpolateYlOrRd, stretching: gviz.logarithmicScale(-7) }),
+                            //viewScale: colorQuantileScale({ valueFunction: (c) => +c.T, classNumber: 12, colorRamp: d3.interpolateYlOrRd }),
+                            //size
+                            //size: (c, r, zf, scale) => scale(+c.T),
+                            //shape: () => "circle",
+                            //viewScale: sizeContinuousScale({ valueFunction: (c) => +c.T, stretching: gviz.logarithmicScale(-8) }),
+                            //viewScale: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 10, minSizePix: 3, maxSizeFactor: 1.1 }),
+                            blendOperation: (zf) => zf < 100 ? "multiply" : "source-over",
+                        }),
+                        new gviz.StrokeStyle({ maxZoom: 70 }),
+                    ],
+                    {
+                        pixNb: 1.5, //8,
+                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
+                    }
+                )
+            } else if (layCode === 'sex') {
+                app.addLayerFromDataset(
+                    dataset,
+                    [
+                        new gviz.ShapeColorSizeStyle_({
+                            color: (c, r, zf, viewScale) => viewScale.color(c.indMF),
+                            size: (c, r, zf, viewScale) => viewScale.size(c.T),
+                            viewScale: viewScaleCombination({
+                                color: colorQuantileScale({ valueFunction: (c) => +c.indMF, classNumber: 12, colorRamp: d3.interpolateSpectral }),
+                                size: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 3, maxSizeFactor: 1 })
+                            }),
+                            shape: () => 'circle',
+                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
+                        }),
+                    ],
+                    {
+                        pixNb: 5,
+                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
+                    }
+                )
+
+            } else if (layCode === 'emp') {
+                app.addLayerFromDataset(
+                    dataset,
+                    [
+                        new gviz.ShapeColorSizeStyle_({
+                            color: (c, r, zf, viewScale) => viewScale.color(c.remp),
+                            size: (c, r, zf, viewScale) => viewScale.size(c.T),
+                            viewScale: viewScaleCombination({
+                                color: colorQuantileScale({ valueFunction: (c) => +c.remp, classNumber: 12, colorRamp: d3.interpolateYlOrRd }),
+                                size: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 3, maxSizeFactor: 1 })
+                            }),
+                            shape: () => 'circle',
+                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
+                        }),
+                        new gviz.StrokeStyle({ maxZoom: 7 }),
+                    ],
+                    {
+                        pixNb: 5,
+                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
+                    }
+                )
+
+            } else if (layCode === 'age') {
+                const colAge = d3.interpolateSpectral
+                app.addLayerFromDataset(
+                    dataset,
+                    [
+                        new gviz.CompositionStyle_({
+                            color: {
+                                Y_LT15: colAge(0.2),
+                                "Y15-64": colAge(0.4),
+                                Y_GE65: colAge(0.9),
+                            },
+                            type: () => 'flag',
+                            size: (c, r, zf, scale) => scale(+c.T),
+                            viewScale: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 8, maxSizeFactor: 1 }),
+                            //viewScale: sizeScale({ valueFunction: (c) => +c.T, exponent: 0.1 }),
+                            stripesOrientation: () => 90,
+                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
+                        })
+                        ,
+                    ],
+                    {
+                        pixNb: 12,
+                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
+                    }
+                )
+
+            } else if (layCode === 'mobility') {
+                app.addLayerFromDataset(
+                    dataset,
+                    [
+                        new gviz.CompositionStyle_({
+                            color: {
+                                SAME: "#fed9a6", //light mostard
+                                CHG_IN: "#7570b3", //blueish
+                                CHG_OUT: "#d95f02", //orange
+                            },
+                            type: () => 'piechart', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                            size: (c, r, zf, scale) => scale(+c.T),
+                            viewScale: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 8, maxSizeFactor: 1 }),
+                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
+                        }),
+                        new gviz.StrokeStyle({ maxZoom: 7 }),
+                    ],
+                    {
+                        pixNb: 12,
+                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
+                    }
+                )
+
+            } else if (layCode === 'pob') {
+                app.addLayerFromDataset(
+                    dataset,
+                    [
+                        new gviz.CompositionStyle_({
+                            color: {
+                                NAT: "#fed9a6", //light mostard
+                                EU_OTH: "#7570b3", //blueish
+                                OTH: "#d95f02", //orange
+                            },
+                            type: () => 'halftone', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                            size: (c, r, zf, scale) => scale(+c.T),
+                            viewScale: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 8, maxSizeFactor: 1 }),
+                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
+                        }),
+                        new gviz.StrokeStyle({ maxZoom: 7 }),
+                    ],
+                    {
+                        pixNb: 12,
+                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
+                    }
+                )
+
+            } else console.error('Unexpected layer code: ' + layCode)
+
+            //redraw
+            app.cg.redraw()
+        }
+
+
+        //layer update
+        document.querySelector('#layer').addEventListener('change', update)
+
+        // show/hide labels
+        document.querySelector('#label').addEventListener('change', function () {
+            app.showLabels = this.checked
+            app.cg.redraw()
+        })
+
+        // show/hide boundaries
+        document.querySelector('#boundary').addEventListener('change', function () {
+            app.showBoundaries = this.checked
+            app.cg.redraw()
+        })
+
+        // show/hide background layer
+        document.querySelector('#background').addEventListener('change', function () {
+            app.showBgLayers = this.checked
+            app.cg.redraw()
+        })
+
+        //select layer from URL
+        const ls = gviz.getParameterByName('lay')
+        if (ls) {
+            const b = document.querySelector('#' + ls)
+            if (b) b.checked = true
+        }
+
+        //initialise
+        update()
+
+
+    </script>
+    <div style="
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    width: auto;
+    height: auto;
+    padding: 1px;
+    border: 0px;
+    background: #ffffffcc;
+">
+        <span style="font-size: 0.8em">
+            <a href="https://github.com/eurostat/gridviz" style="text-decoration: none">GridViz</a> |
+            ©<a href="https://eurogeographics.org" style="text-decoration: none">EuroGeographics</a></span>
+    </div>
+
+
+</body>
+
+</html>

@@ -10,15 +10,12 @@
 /**
  * A style, to show a grid dataset.
  *
- * @abstract
- *
  * @author Joseph Davies, Julien Gaffuri
  */
 export class Style {
     /**
      * @abstract
-     * @param {{filter?:function(import('./Dataset').Cell):boolean,offset?:function(import('./Dataset').Cell,number,number):{dx:number,dy:number},visible?:boolean,alpha?:function(number):number,blendOperation?:function(number):GlobalCompositeOperation,minZoom?:number,maxZoom?:number}} opts
-     *      minZoom: The minimum zoom level when to show the layer. maxZoom: The maximum zoom level when to show the layer
+     * @param {{filter?:function(import('./Dataset').Cell):boolean,offset?:function(import('./Dataset').Cell,number,number):{dx:number,dy:number},visible?:boolean,alpha?:function(number):number,blendOperation?:function(number):GlobalCompositeOperation,minZoom?:number,maxZoom?:number,drawFun?:function}} opts
      */
     constructor(opts) {
         opts = opts || {}
@@ -46,7 +43,7 @@ export class Style {
         /** A function returning the blend operation. The function parameter is the zoom factor.
          * (see CanvasRenderingContext2D: globalCompositeOperation property)
          * @type {function(number):GlobalCompositeOperation} */
-        this.blendOperation = opts.blendOperation || (zf => 'normal')
+        this.blendOperation = opts.blendOperation || (zf => "source-over")
 
         /** The minimum zoom factor: Below this level, the layer is not shown.
          * @type {number}
@@ -57,6 +54,10 @@ export class Style {
          * @type {number}
          * */
         this.maxZoom = opts.maxZoom || Infinity
+
+        /** A draw function for the style.
+         * @type {function} */
+        this.drawFun = opts.drawFun
 
         //ensure acceptable values for the zoom limits.
         if (this.minZoom >= this.maxZoom)
@@ -77,7 +78,8 @@ export class Style {
      * @abstract
      */
     draw(cells, resolution, cg) {
-        throw new Error('Method draw not implemented.')
+        if (this.drawFun) this.drawFun(cells, resolution, cg)
+        else throw new Error('Method draw not implemented.')
     }
 
     //getters and setters
