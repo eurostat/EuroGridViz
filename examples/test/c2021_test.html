@@ -3,11 +3,11 @@
 
 <head>
     <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-    <title>Gridviz - Custom style</title>
+    <title></title>
 </head>
 
 <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-    <div id="viz-container" style="height: 100%; width: 100%"></div>
+    <div id="map" style="height: 100%; width: 100%"></div>
 
     <div style="
         position: absolute;
@@ -56,101 +56,14 @@
     </div>
 
     <script src="../../dist/gridviz.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@2.0.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-format@3"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-scale@4"></script>
     <script>
-        let containerDiv = document.getElementById('viz-container')
-
-        //generic function for continuous color maps
-        //valueFunction, colorRamp, stretching
-        const colorContinuousScale = (opts) => {
-            const valueFunction = opts.valueFunction
-            const colorRamp = opts.colorRamp || (() => "purple")
-            const stretching = opts.stretching
-            return (cells, r, zf) => {
-                const domain = d3.extent(cells, valueFunction)
-                const scale = t => {
-                    //scale to [0,1]
-                    t = (t - domain[0]) / (domain[1] - domain[0])
-                    //stretch
-                    if (stretching) t = stretching(t)
-                    return colorRamp(t)
-                }
-                //scale.domain(d3.extent(cells, valueFunction))
-                return scale;
-            }
-        }
-
-        //generic function for quantile color maps
-        //valueFunction, classNumber, colorRamp
-        const colorQuantileScale = (opts) => {
-            const valueFunction = opts.valueFunction
-            const classNumber = opts.classNumber || 12
-            const colorRamp = opts.colorRamp || (() => "purple")
-            const scale = d3.scaleQuantile().range(Array.from({ length: classNumber }, (_, i) => colorRamp(i / (classNumber - 1))))
-            return (cells) => {
-                scale.domain(cells.map(valueFunction));
-                return scale;
-            }
-        }
-
-        //generic function for size map
-        //valueFunction, minValue, minSizePix, maxSizeFactor, stretching
-        const sizeContinuousScale = (opts) => {
-            const valueFunction = opts.valueFunction
-            const minValue = opts.minValue || 0
-            const minSizePix = opts.minSizePix || 0
-            const maxSizeFactor = opts.minSizePix || 1.41
-            const stretching = opts.stretching
-            return (cells, r, zf) => {
-                const domain = [minValue, d3.max(cells, valueFunction)]
-                const range = [minSizePix * zf, r * maxSizeFactor]
-                const scale = t => {
-                    //scale to [0,1]
-                    t = (t - domain[0]) / (domain[1] - domain[0])
-                    //stretch
-                    if (stretching) t = stretching(t)
-                    //scale to range
-                    return range[0] + t * (range[1] - range[0])
-                }
-                return scale;
-            }
-        }
-
-        //generic function for size map - quantile
-        //valueFunction, classNumber, minSizePix, maxSizeFactor
-        const sizeQuantileScale = (opts) => {
-            const valueFunction = opts.valueFunction
-            const classNumber = opts.classNumber || 12
-            const minSizePix = opts.minSizePix || 1
-            const maxSizeFactor = opts.maxSizeFactor || 1
-            const scale = d3.scaleQuantile()
-            return (cells, r, zf) => {
-                scale.domain(cells.map(valueFunction))
-                const minSizeGeo = minSizePix * zf, maxSizeGeo = r * maxSizeFactor
-                scale.range(Array.from({ length: classNumber }, (_, i) => minSizeGeo + i * (maxSizeGeo - minSizeGeo) / (classNumber - 1)))
-                return scale;
-            }
-        }
-
-
-        //combine scales
-        const viewScaleCombination = (obj) => {
-            //obj: prop and a function to call
-            return (cells, r, zf) => {
-                const out = {}
-                for (const p in obj) { out[p] = obj[p](cells, r, zf) }
-                return out
-            }
-        }
-
-
 
         /*
         "T" >= Total population
@@ -173,35 +86,35 @@
         "CHG_OUT" >= Moved from outside the Netherlands (as of January 1, 2021, compared to January 1, 2020)
         */
 
-        //build application
-        const app = new gviz.App(containerDiv)
-            .setGeoCenter({ x: 4598000, y: 2715000 })
-            .setZoomFactor(700)
-            .setLabelLayer(gviz_es.getEuronymeLabelLayer())
-            .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
+        //define map with initial view
+        const map = new gridviz.Map(document.getElementById('map'), { x: 4598000, y: 2715000, z: 700, zoomExtent:[10, 10000] })
+            .addZoomButtons()
             .setViewFromURL()
-            .addBackgroundLayer({
-                url: "https://gisco-services.ec.europa.eu/maps/tiles/OSMPositronBackground/EPSG3035/",
-                resolutions: [156543.03392804097, 78271.51696402048, 39135.75848201024, 19567.87924100512, 9783.93962050256, 4891.96981025128, 2445.98490512564, 1222.99245256282, 611.49622628141, 305.748113140705, 152.8740565703525, 76.43702828517625, 38.21851414258813, 19.109257071294063, 9.554628535647032, 4.777314267823516, 2.388657133911758, 1.19432856695, 0.597164283477939],
-                origin: [0, 6000000],
-                maxZoom: 50,
-            })
-            .addBackgroundLayer({
-                url: 'https://raw.githubusercontent.com/jgaffuri/mbxyz/main/pub/elevation_shading/',
-                resolutions: Array.from({ length: 9 }, (_, i) => 28.00132289714475 * Math.pow(2, 10 - i)),
-                origin: [0, 6000000],
-                filterColor: (zf) => '#ffffffc0',
-                minZoom: 50,
-            })
 
+        const backgroundLayer1 = new gridviz.BackgroundLayer({
+            url: 'https://raw.githubusercontent.com/jgaffuri/mbxyz/main/pub/elevation_shading/',
+            resolutions: Array.from({ length: 9 }, (_, i) => 28.00132289714475 * Math.pow(2, 10 - i)),
+            origin: [0, 6000000],
+            filterColor: () => '#ffffffc0',
+            visible: (z) => z > 50,
+        })
 
-        //prepare dataset
-        const dataset = app.makeMultiScaleTiledGridDataset(
+        const backgroundLayer2 = new gridviz.BackgroundLayer(
+            gridviz_eurostat.giscoBackgroundLayer("OSMPositronBackground", 18, "EPSG3035", {
+                visible: (z) => z <= 50,
+            })
+        )
+
+        //define boundaries layer
+        const boundariesLayer = new gridviz.GeoJSONLayer(gridviz_eurostat.getEurostatBoundariesLayer())
+
+        //make label layer
+        const labelLayer = new gridviz.LabelLayer(gridviz_eurostat.getEuronymeLabelLayer())
+
+        //define multi resolution dataset
+        const dataset = new gridviz.MultiResolutionDataset(
             [1000, 2000, 5000, 10000, 20000, 50000, 100000],
-            (r) =>
-                'http://localhost:1234/' +
-                r +
-                'm/',
+            resolution => new gridviz.TiledGrid(map, 'http://localhost:1234/' + resolution + 'm/'),
             {
                 preprocess: (c) => {
                     if (!c.T || +c.T == 0) return false
@@ -220,161 +133,278 @@
             }
         )
 
+        //make grid layer
+        const gridLayer = new gridviz.GridLayer(dataset, [])
+
+        //add layers to map
+        map.layers = [backgroundLayer1, backgroundLayer2, gridLayer, boundariesLayer, labelLayer]
 
         //
         const update = () => {
             //read GUI selection
             const layCode = document.querySelector('input[name="layer"]:checked').value
 
-            //remove layers
-            app.layers = []
-
-            //formater
-            //const f1 = d3.format('.1f')
-
-            //set layer
+            //set style
             if (layCode === 'pop') {
 
-                app.addLayerFromDataset(
-                    dataset,
-                    [
-                        new gviz.ShapeColorSizeStyle_({
-                            color: (c, r, zf, scale) => scale(c.T),
-                            viewScale: colorContinuousScale({ valueFunction: (c) => +c.T, colorRamp: d3.interpolateYlOrRd, stretching: gviz.logarithmicScale(-7) }),
-                            //viewScale: colorQuantileScale({ valueFunction: (c) => +c.T, classNumber: 12, colorRamp: d3.interpolateYlOrRd }),
-                            //size
-                            //size: (c, r, zf, scale) => scale(+c.T),
-                            //shape: () => "circle",
-                            //viewScale: sizeContinuousScale({ valueFunction: (c) => +c.T, stretching: gviz.logarithmicScale(-8) }),
-                            //viewScale: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 10, minSizePix: 3, maxSizeFactor: 1.1 }),
-                            blendOperation: (zf) => zf < 100 ? "multiply" : "source-over",
+                const nbClasses = 6
+                const colors = d3.schemeYlOrRd[nbClasses]
+                gridLayer.styles = [
+                    new gridviz.ShapeColorSizeStyle({
+                        color: (c, r, z, viewScale) => viewScale(c.T),
+                        viewScale: gridviz.viewScaleColor({
+                            valueFunction: (c) => +c.T,
+                            //colorScale: d3.interpolateYlOrRd,
+                            colors: colors,
+                            stretching: gridviz.logarithmicScale(-7)
                         }),
-                        new gviz.StrokeStyle({ maxZoom: 70 }),
-                    ],
-                    {
-                        pixNb: 1.5, //8,
-                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
-                    }
-                )
+                        blendOperation: (z) => z < 100 ? "multiply" : "source-over",
+                    }),
+                    new gridviz.StrokeStyle({ visible: (z) => z < 50 }),
+                ]
+
+                //legend
+                gridLayer.styles[0].legends = [
+                    new gridviz.ColorDiscreteLegend({
+                        title: "Population",
+                        width: 300,
+                        colors: () => colors,
+                        breaks: (viewScale) => viewScale?.breaks.map(b => Math.round(b)),
+                    })
+                ]
+
+                gridLayer.minPixelsPerCell = 1.5
+
+                gridLayer.cellInfoHTML = (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
+
             } else if (layCode === 'sex') {
-                app.addLayerFromDataset(
-                    dataset,
-                    [
-                        new gviz.ShapeColorSizeStyle_({
-                            color: (c, r, zf, viewScale) => viewScale.color(c.indMF),
-                            size: (c, r, zf, viewScale) => viewScale.size(c.T),
-                            viewScale: viewScaleCombination({
-                                color: colorQuantileScale({ valueFunction: (c) => +c.indMF, classNumber: 12, colorRamp: d3.interpolateSpectral }),
-                                size: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 3, maxSizeFactor: 1 })
-                            }),
-                            shape: () => 'circle',
-                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
-                        }),
-                    ],
-                    {
-                        pixNb: 5,
-                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
-                    }
+
+                //sex - color classifier
+                const breaks = [-20, -7, -2, -0.5, 0.5, 2, 7, 20]
+                const sexColorClassifier = gridviz.colorClassifier(breaks, d3.schemeSpectral[breaks.length + 1])
+
+                const classNumberSize = 4
+                const style = new gridviz.ShapeColorSizeStyle({
+                    color: (c, r, z, viewScale) => sexColorClassifier(c.indMF),
+                    size: (c, r, z, viewScale) => viewScale(c.T),
+                    viewScale: gridviz.viewScaleQuantile({ valueFunction: (c) => +c.T, classNumber: classNumberSize, minSizePix: 4, maxSizeFactor: 1.1 }),
+                    shape: () => 'circle',
+                    blendOperation: (z) => z < 50 ? "multiply" : "source-over",
+                })
+                gridLayer.styles = [style]
+
+                gridLayer.minPixelsPerCell = 5
+
+                style.legends = []
+
+                //sex color legend
+                style.legends.push(new gridviz.ColorDiscreteLegend({
+                    title: "Sex balance, in %",
+                    width: 300,
+                    colors: () => sexColorClassifier.colors,
+                    breaks: () => sexColorClassifier.breaks,
+                }))
+
+                //population size legend
+                style.addLegends(
+                    gridviz.sizeDiscreteViewScaleLegend(
+                        classNumberSize, {
+                        title: "Population",
+                        fillColor: "lightgray",
+                        labelFormat: Math.round,
+                    })
                 )
+
+                gridLayer.cellInfoHTML = (c) =>
+                    '<b>' + (+c.F + +c.M) + '</b> person' + (+c.F + +c.M == 1 ? '' : 's') + '<br>' +
+                    c.M + ' m' + (c.M == 1 ? "a" : "e") + 'n<br>' +
+                    c.F + ' wom' + (c.F == 1 ? 'a' : 'e') + 'n<br>' +
+                    'Difference: <b>' + (c.indMF > 0 ? '+' : '') + d3.format('.1f')(c.indMF) + ' % men</b>'
 
             } else if (layCode === 'emp') {
-                app.addLayerFromDataset(
-                    dataset,
-                    [
-                        new gviz.ShapeColorSizeStyle_({
-                            color: (c, r, zf, viewScale) => viewScale.color(c.remp),
-                            size: (c, r, zf, viewScale) => viewScale.size(c.T),
-                            viewScale: viewScaleCombination({
-                                color: colorQuantileScale({ valueFunction: (c) => +c.remp, classNumber: 12, colorRamp: d3.interpolateYlOrRd }),
-                                size: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 3, maxSizeFactor: 1 })
-                            }),
-                            shape: () => 'circle',
-                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
-                        }),
-                        new gviz.StrokeStyle({ maxZoom: 7 }),
-                    ],
-                    {
-                        pixNb: 5,
-                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
-                    }
+
+                const breaks = [30, 40, 45, 50, 55, 60, 70]
+                const empColorClassifier = gridviz.colorClassifier(breaks, d3.schemeYlOrRd[breaks.length + 1])
+                //d3.interpolateYlOrRd(Math.floor(20*c.remp / 100)/20)
+
+                const classNumberSize = 4
+                const style = new gridviz.ShapeColorSizeStyle({
+                    color: (c, r, z, viewScale) => empColorClassifier(c.remp),
+                    size: (c, r, z, viewScale) => viewScale(c.T),
+                    viewScale: gridviz.viewScaleQuantile({ valueFunction: (c) => +c.T, classNumber: classNumberSize, minSizePix: 3, maxSizeFactor: 1.1 }),
+                    shape: () => 'circle',
+                    blendOperation: (z) => z < 50 ? "multiply" : "source-over",
+                })
+                gridLayer.styles = [style]
+
+                gridLayer.minPixelsPerCell = 5
+
+
+
+                //employment color legend
+                style.legends.push(new gridviz.ColorDiscreteLegend({
+                    title: "Employment, in %",
+                    width: 250,
+                    colors: () => empColorClassifier.colors,
+                    breaks: () => empColorClassifier.breaks,
+                }))
+
+                //population size legend
+                style.addLegends(
+                    gridviz.sizeDiscreteViewScaleLegend(
+                        classNumberSize, {
+                        title: "Population",
+                        fillColor: "lightgray",
+                        labelFormat: Math.round,
+                    })
                 )
+
+                gridLayer.cellInfoHTML = (c) =>
+                    '<b>' + d3.format('.1f')(c.remp) + ' %</b> employment<br>' +
+                    //c.EMP + '<br>' +
+                    (+c.F + +c.M) + ' person' + (+c.F + +c.M == 1 ? '' : 's')
 
             } else if (layCode === 'age') {
+
                 const colAge = d3.interpolateSpectral
-                app.addLayerFromDataset(
-                    dataset,
-                    [
-                        new gviz.CompositionStyle_({
-                            color: {
-                                Y_LT15: colAge(0.2),
-                                "Y15-64": colAge(0.4),
-                                Y_GE65: colAge(0.9),
-                            },
-                            type: () => 'flag',
-                            size: (c, r, zf, scale) => scale(+c.T),
-                            viewScale: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 8, maxSizeFactor: 1 }),
-                            //viewScale: sizeScale({ valueFunction: (c) => +c.T, exponent: 0.1 }),
-                            stripesOrientation: () => 90,
-                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
-                        })
-                        ,
-                    ],
-                    {
-                        pixNb: 12,
-                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
-                    }
+                const classNumberSize = 5
+                gridLayer.styles = [
+                    new gridviz.CompositionStyle({
+                        color: {
+                            Y_LT15: colAge(0.2),
+                            "Y15-64": colAge(0.4),
+                            Y_GE65: colAge(0.9),
+                        },
+                        type: () => 'flag',
+                        size: (c, r, z, scale) => scale(+c.T),
+                        viewScale: gridviz.viewScaleQuantile({ valueFunction: (c) => +c.T, classNumber: classNumberSize, minSizePix: 8 }),
+                        //viewScale: gridviz.sizeScale({ valueFunction: (c) => +c.T, exponent: 0.1 }),
+                        stripesOrientation: () => 90,
+                        blendOperation: (z) => z < 50 ? "multiply" : "source-over",
+                    })
+                    ,
+                ]
+
+                gridLayer.minPixelsPerCell = 12
+
+                //age
+                gridLayer.styles[0].legends = [new gridviz.ColorCategoryLegend({
+                    title: "Age",
+                    colorLabel: [
+                        [colAge(0.2), "Under 15 years"],
+                        [colAge(0.4), "15 to 64 years"],
+                        [colAge(0.9), "65 years and older"],
+                    ]
+                })]
+
+                //population
+                gridLayer.styles[0].addLegends(
+                    gridviz.sizeDiscreteViewScaleLegend(
+                        classNumberSize, {
+                        title: "Population",
+                        shape: "square",
+                        fillColor: "lightgray",
+                        labelFormat: Math.round,
+                    })
                 )
+
+                gridLayer.cellInfoHTML = (c) => '<b>' + (+c.Y_LT15 + +c["Y15-64"] + +c.Y_GE65) + '</b> person' + ((+c.Y_LT15 + +c["Y15-64"] + +c.Y_GE65) == 1 ? '' : 's') + "<br>" +
+                    c.Y_LT15 + " under 15 years<br>" +
+                    c["Y15-64"] + " 15 to 64 years<br>" +
+                    c.Y_GE65 + " 65 years and older"
 
             } else if (layCode === 'mobility') {
-                app.addLayerFromDataset(
-                    dataset,
-                    [
-                        new gviz.CompositionStyle_({
-                            color: {
-                                SAME: "#fed9a6", //light mostard
-                                CHG_IN: "#7570b3", //blueish
-                                CHG_OUT: "#d95f02", //orange
-                            },
-                            type: () => 'piechart', //flag, piechart, ring, segment, radar, agepyramid, halftone
-                            size: (c, r, zf, scale) => scale(+c.T),
-                            viewScale: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 8, maxSizeFactor: 1 }),
-                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
-                        }),
-                        new gviz.StrokeStyle({ maxZoom: 7 }),
-                    ],
-                    {
-                        pixNb: 12,
-                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
-                    }
+
+                const classNumberSize = 5
+                gridLayer.styles = [
+                    new gridviz.CompositionStyle({
+                        color: {
+                            SAME: "#fed9a6", //light mostard
+                            CHG_IN: "#7570b3", //blueish
+                            CHG_OUT: "#d95f02", //orange
+                        },
+                        type: () => 'piechart', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                        size: (c, r, z, scale) => scale(+c.T),
+                        viewScale: gridviz.viewScaleQuantile({ valueFunction: (c) => +c.T, classNumber: classNumberSize, minSizePix: 6, maxSizeFactor: 1.1 }),
+                        blendOperation: (z) => z < 50 ? "multiply" : "source-over",
+                    })
+                ]
+
+                gridLayer.minPixelsPerCell = 12
+
+                //mobility
+                gridLayer.styles[0].legends = [new gridviz.ColorCategoryLegend({
+                    title: "Mobility, compared to January 1, 2020",
+                    colorLabel: [
+                        ["#fed9a6", "Residence unchanged"],
+                        ["#7570b3", "Moved within the country"],
+                        ["#d95f02", "Moved from outside the country"],
+                    ]
+                })]
+
+                //population
+                gridLayer.styles[0].addLegends(
+                    gridviz.sizeDiscreteViewScaleLegend(
+                        classNumberSize, {
+                        title: "Population",
+                        fillColor: "lightgray",
+                        labelFormat: Math.round,
+                    })
                 )
 
+                gridLayer.cellInfoHTML = (c) => '<b>' + (+c.SAME + +c.CHG_IN + +c.CHG_OUT) + '</b> person' + ((+c.SAME + +c.CHG_IN + +c.CHG_OUT) == 1 ? '' : 's') + "<br>" +
+                    c.SAME + " residence unchanged<br>" +
+                    c.CHG_IN + " moved within the country<br>" +
+                    c.CHG_OUT + " moved from outside the country"
+
             } else if (layCode === 'pob') {
-                app.addLayerFromDataset(
-                    dataset,
-                    [
-                        new gviz.CompositionStyle_({
-                            color: {
-                                NAT: "#fed9a6", //light mostard
-                                EU_OTH: "#7570b3", //blueish
-                                OTH: "#d95f02", //orange
-                            },
-                            type: () => 'halftone', //flag, piechart, ring, segment, radar, agepyramid, halftone
-                            size: (c, r, zf, scale) => scale(+c.T),
-                            viewScale: sizeQuantileScale({ valueFunction: (c) => +c.T, classNumber: 5, minSizePix: 8, maxSizeFactor: 1 }),
-                            blendOperation: (zf) => zf < 50 ? "multiply" : "source-over",
-                        }),
-                        new gviz.StrokeStyle({ maxZoom: 7 }),
-                    ],
-                    {
-                        pixNb: 12,
-                        cellInfoHTML: (c) => '<b>' + c.T + '</b> person' + (+c.T == 1 ? '' : 's')
-                    }
+
+                const classNumberSize = 5
+                gridLayer.styles = [
+                    new gridviz.CompositionStyle({
+                        color: {
+                            NAT: "#fed9a6", //light mostard
+                            EU_OTH: "#7570b3", //blueish
+                            OTH: "#d95f02", //orange
+                        },
+                        type: () => 'halftone', //flag, piechart, ring, segment, radar, agepyramid, halftone
+                        size: (c, r, z, scale) => scale(+c.T),
+                        viewScale: gridviz.viewScaleQuantile({ valueFunction: (c) => +c.T, classNumber: classNumberSize, minSizePix: 8 }),
+                        blendOperation: (z) => z < 50 ? "multiply" : "source-over",
+                    })
+                ]
+
+                gridLayer.minPixelsPerCell = 12
+
+                //place of birth
+                gridLayer.styles[0].legends = [new gridviz.ColorCategoryLegend({
+                    title: "Place of birth",
+                    colorLabel: [
+                        ["#fed9a6", "Born in the country"],
+                        ["#7570b3", "Born in another EU member state"],
+                        ["#d95f02", "Born outside the EU"],
+                    ]
+                })]
+
+                //population
+                gridLayer.styles[0].addLegends(
+                    gridviz.sizeDiscreteViewScaleLegend(
+                        classNumberSize, {
+                        title: "Population",
+                        fillColor: "lightgray",
+                        labelFormat: Math.round,
+                    })
                 )
+
+                gridLayer.cellInfoHTML = (c) => '<b>' + (+c.NAT + +c.EU_OTH + +c.OTH) + '</b> person' + ((+c.NAT + +c.EU_OTH + +c.OTH) == 1 ? '' : 's') + "<br>" +
+                    c.NAT + " born in the country<br>" +
+                    c.EU_OTH + " born in another EU member state<br>" +
+                    c.OTH + " born outside the EU"
 
             } else console.error('Unexpected layer code: ' + layCode)
 
             //redraw
-            app.cg.redraw()
+            map.redraw()
         }
 
 
@@ -383,24 +413,30 @@
 
         // show/hide labels
         document.querySelector('#label').addEventListener('change', function () {
-            app.showLabels = this.checked
-            app.cg.redraw()
+            labelLayer.visible = () => this.checked
+            map.redraw()
         })
 
         // show/hide boundaries
         document.querySelector('#boundary').addEventListener('change', function () {
-            app.showBoundaries = this.checked
-            app.cg.redraw()
+            boundariesLayer.visible = () => this.checked
+            map.redraw()
         })
 
         // show/hide background layer
         document.querySelector('#background').addEventListener('change', function () {
-            app.showBgLayers = this.checked
-            app.cg.redraw()
+            if (this.checked) {
+                backgroundLayer1.visible = (z) => z > 50
+                backgroundLayer2.visible = (z) => z <= 50
+            } else {
+                backgroundLayer1.visible = () => false
+                backgroundLayer2.visible = () => false
+            }
+            map.redraw()
         })
 
         //select layer from URL
-        const ls = gviz.getParameterByName('lay')
+        const ls = gridviz.getParameterByName('lay')
         if (ls) {
             const b = document.querySelector('#' + ls)
             if (b) b.checked = true

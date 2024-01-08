@@ -1,125 +1,87 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
+<div>
+    <select id="type">
+        <option value="flag_v">Flag vertical</option>
+        <option value="flag_h">Flag horizontal</option>
+        <option value="piechart">Pie chart</option>
+        <option value="ring" selected>Ring</option>
+        <option value="segment_v">Segment vertical</option>
+        <option value="segment_h">Segment horizontal</option>
+        <option value="radar">Radar</option>
+        <option value="halftone">Halftone</option>
+        <option value="agepyramid">Age pyramid</option>
+        <option value="random">Random</option>
+    </select>
+    <br />
+    <input type="checkbox" id="size" checked />
+    <label for="size" style="font-size: 1em">Size</label>
+</div>
+<div id="map" style="height: 500px; width: 800px"></div>
 
-<head>
-    <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-    <title></title>
-</head>
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
 
-<body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-    <div id="viz-container" style="height: 100%; width: 100%"></div>
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 3951000, y: 2255603, z: 10, zoomExtent: [4, 2000] })
+        .addZoomButtons()
 
-    <div style="
-                position: absolute;
-                left: 20px;
-                top: 20px;
-                width: auto;
-                height: auto;
-                padding: 10px;
-                border: 0px;
-                border-radius: 5px;
-                background: #ffffffcc;
-                line-height: 1.6;
-                box-shadow: 5px 5px 5px grey;
-            ">
-        <select id="type" style="font-size: 1em">
-            <option value="flag_v">Flag vertical</option>
-            <option value="flag_h">Flag horizontal</option>
-            <option value="piechart">Pie chart</option>
-            <option value="ring" selected>Ring</option>
-            <option value="segment_v">Segment vertical</option>
-            <option value="segment_h">Segment horizontal</option>
-            <option value="radar">Radar</option>
-            <option value="halftone">Halftone</option>
-            <option value="agepyramid">Age pyramid</option>
-            <option value="random">Random</option>
-        </select>
-        <br />
-        <input type="checkbox" id="size" checked />
-        <label for="size" style="font-size: 1em">Size</label>
-    </div>
+    //define multi resolution dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/men/2019/' + resolution + 'm/'),
+        { preprocess: (c) => { c.men_2_4ind = +c.men - +c.men_1ind - +c.men_5ind } }
+    )
 
-    <script src="../../dist/gridviz.js"></script>
-    <script>
-        let containerDiv = document.getElementById('viz-container')
-        const app = new gviz.App(containerDiv)
-            .setGeoCenter({ x: 3951000, y: 2255603 })
-            .setZoomFactor(10)
-            .setZoomFactorExtent([4, 2000])
-            //.setBackgroundColor("black")
-            .addMultiScaleTiledGridLayer(
-                [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                (r) =>
-                    'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/men/2019/' +
-                    r +
-                    'm/',
-                [
-                    new gviz.CompositionStyle({
-                        color: {
-                            men_1ind: '#7570b3',  //blue
-                            men_2_4ind: '#1b9e77', //green
-                            men_5ind: '#d95f02', //orange
-                        },
-                        type: () => 'ring',
-                        stripesOrientation: () => 0,
-                        sizeCol: 'men',
-                        offsetAngle: () => 90,
-                        size: (v, r, s, zf) => 1 * r * gviz.sPow(v / s.max, 0.13, 0),
-                    }),
-                ],
-                {
-                    pixNb: 18,
-                    preprocess: (c) => {
-                        c.men_2_4ind = +c.men - +c.men_1ind - +c.men_5ind
-                    },
-                }
-            )
+    //define style
+    const style = new gridviz.CompositionStyle({
+        color: {
+            men_1ind: '#7570b3',  //blue
+            men_2_4ind: '#1b9e77', //green
+            men_5ind: '#d95f02', //orange
+        },
+        type: () => 'ring',
+        stripesOrientation: () => 0,
+        size: (c, r, z, scale) => scale(+c.men),
+        viewScale: gridviz.viewScaleQuantile({ valueFunction: (c) => +c.men, classNumber: 5, minSizePix: 8 }),
+        offsetAngle: () => 90,
+    })
 
-        //type selection
-        const s = app.layers[0].styles[0]
-        document.getElementById('type').addEventListener('change', function () {
-            const v = this.value
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style], { minPixelsPerCell: 18 })]
 
-            //set type
-            const type = v.includes('flag') ? 'flag' : v.includes('segment') ? 'segment' : v
-            if (type === 'random')
-                s.type = () => {
-                    const r = Math.random()
-                    return r < 2 / 9
-                        ? 'flag'
-                        : r < 3 / 9
-                            ? 'piechart'
-                            : r < 4 / 9
-                                ? 'ring'
-                                : r < 6 / 9
-                                    ? 'segment'
-                                    : r < 7 / 9
-                                        ? 'radar'
-                                        : r < 8 / 9
-                                            ? 'halftone'
-                                            : 'agepyramid'
-                }
-            else s.type = () => type
 
-            //set orientation
-            const or = v.includes('h') ? 0 : v.includes('v') ? 90 : 90
-            if (type === 'random') s.stripesOrientation = () => (Math.random() < 0.5 ? 0 : 90)
-            else s.stripesOrientation = () => or
+    //type selection
+    document.getElementById('type').addEventListener('change', function () {
+        const v = this.value
+        const type = v.includes('flag') ? 'flag' : v.includes('segment') ? 'segment' : v
 
-            //redraw
-            app.cg.redraw()
-        })
+        //set type
+        if (type === 'random')
+            style.type = () => {
+                const r = Math.random()
+                return r < 2 / 9 ? 'flag' : r < 3 / 9 ? 'piechart' : r < 4 / 9 ? 'ring' : r < 6 / 9 ? 'segment' : r < 7 / 9 ? 'radar' : r < 8 / 9 ? 'halftone' : 'agepyramid'
+            }
+        else style.type = () => type
 
-        //size
-        document.querySelector('#size').addEventListener('change', function () {
-            //set size
-            s.size = this.checked
-                ? (v, r, s, zf) => 1 * r * gviz.sPow(v / s.max, 0.13, 0)
-                : (s.size = (v, r, s, zf) => r)
-            //redraw
-            app.cg.redraw()
-        })
-    </script>
-</body>
+        //set orientation
+        const or = v.includes('h') ? 0 : v.includes('v') ? 90 : 90
+        if (type === 'random') style.stripesOrientation = () => (Math.random() < 0.5 ? 0 : 90)
+        else style.stripesOrientation = () => or
 
-</html>
+        //redraw
+        map.redraw()
+    })
+
+    //size
+    document.querySelector('#size').addEventListener('change', function () {
+        //set size
+        style.size = this.checked
+            ? (c, r, z, scale) => scale(+c.men)
+            : (c, r) => r
+        //redraw
+        map.redraw()
+    })
+
+</script>

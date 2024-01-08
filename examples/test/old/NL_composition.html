@@ -24,9 +24,9 @@
         <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
         <script>
             let containerDiv = document.getElementById('viz-container')
-            const app = new gviz.App(containerDiv)
+            const map = new gridviz.Map(containerDiv)
                 .setGeoCenter({ x: 135000, y: 456000 })
-                .setZoomFactor(1)
+                .setZoom(1)
                 .setLabelLayer(gviz_es.getEuronymeLabelLayer())
 
             const colorDict = {
@@ -37,14 +37,14 @@
             //x,y,Inhabitants,Total men,Total women,Population under 14,Population over 65,Both parents born in NL (%)
 
             //flag, piechart, ring style
-            const s = new gviz.CompositionStyle({
+            const s = new gridviz.CompositionStyle({
                 color: colorDict,
                 type: () => 'agepyramid',
                 sizeCol: 'Inhabitants',
-                size: (v, r, s, zf) => r * Math.sqrt(v / s.max),
+                size: (v, r, s, z) => r * Math.sqrt(v / s.max),
             })
 
-            app.addCSVGridLayer(
+            map.addCSVGridLayer(
                 'https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Netherlands/100m/NL_census.csv',
                 100,
                 [s],
@@ -65,9 +65,9 @@
             const select = document.querySelector('#type')
             select.addEventListener('change', function () {
                 s.type = () => select.value
-                for (let lay of app.layers) lay.styles = [s]
+                for (let lay of map.layers) lay.styles = [s]
                 //redraw
-                app.cg.redraw()
+                map.cg.redraw()
             })
         </script>
 

@@ -1,27 +1,30 @@
+census 2021 example
 
-revamp layers, API - see lflt
-static image background layer
-merge geocanvas and app
-change draw signature: draw(cells, canvas, view(x,y,z), opts) - draw in geo coords by default (!)
+static image background layer - for map background in oversea territories
+getCellFocusInfo should be moved to gridlayer ?
+hillshading style
+contour style
+lego style
+tanaka style
+reorganise map - simplify constructor
+population.csv files: make 2021 ones
+legends: add scale.invert everywhere ?
+make parameter both a function and a static value - check how it is done in d3
+bug un fullscreen button. On fullscreen exit.
+
+integrate scale and color-scale: colors scale should be based on size scale, with [0,1] color scale as range ?
 extract modules ?
-
-API changes for v3:
-app -> map
-map.addLayer
-zoom factor -> zoom
-layer.addTo(map)
-
-
-stretching: transition to new functions
-
 style value by alpha: Document
-
+style: rounded squares
+style: ammalgamated circles (with buffer out/in)
 style: spider net diagram
 style: flower - for composition
 style: bi-symbol map
 
+replace GreyEarth with own shaded relief
 income change: double smoothing map ?
 legend for bivariate map
+upgrade modules:  gridviz-parquet
 
 NO
 POP Pop
@@ -188,5 +191,5 @@ Census 2021:
 - Gender (males, females)
 - Age (under 15, 15 to 64, 65 and over)
 - Employment
-- Place of birth (in the reporting country, in another EU country, outside EU)
 - Usual residence 12 months before (unchanged, within reporting country, outside of the reporting country).
+- Place of birth (in the reporting country, in another EU country, outside EU)

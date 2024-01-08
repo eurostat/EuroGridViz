@@ -1,133 +1,126 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
-    <head>
-        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-        <title>Gridviz - Square color category WebGL style</title>
-    </head>
+<div id="map" style="height: 500px; width: 800px"></div>
 
-    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-        <div id="viz-container" style="height: 100%; width: 100%"></div>
+<script src="../../dist/gridviz.js"></script>
+<script>
 
-        <script src="../../dist/gridviz.js"></script>
-        <script>
-            const clcColors = {
-                1: '#e6004d',
-                2: '#ff0000',
-                3: '#cc4df2',
-                4: '#cc0000',
-                5: '#e6cccc',
-                6: '#e6cce6',
-                7: '#a600cc',
-                8: '#a64d00',
-                9: '#ff4dff',
-                10: '#ffa6ff',
-                11: '#ffe6ff',
-                12: '#ffffa8',
-                13: '#ffff00',
-                14: '#e6e600',
-                15: '#e68000',
-                16: '#f2a64d',
-                17: '#e6a600',
-                18: '#e6e64d',
-                19: '#ffe6a6',
-                20: '#ffe64d',
-                21: '#e6cc4d',
-                22: '#f2cca6',
-                23: '#80ff00',
-                24: '#00a600',
-                25: '#4dff00',
-                26: '#ccf24d',
-                27: '#a6ff80',
-                28: '#a6e64d',
-                29: '#a6f200',
-                30: '#e6e6e6',
-                31: '#cccccc',
-                32: '#ccffcc',
-                33: '#000000',
-                34: '#a6e6cc',
-                35: '#a6a6ff',
-                36: '#4d4dff',
-                37: '#ccccff',
-                38: '#e6e6ff',
-                39: '#a6a6e6',
-                40: '#00ccf2',
-                41: '#80f2e6',
-                42: '#00ffa6',
-                43: '#a6ffe6',
-                44: '#e6f2ff',
-                48: 'gray',
-            }
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 3000 })
+        .addZoomButtons()
 
-            const clcLabels = {
-                1: 'Continuous urban fabric',
-                2: 'Discontinuous urban fabric',
-                3: 'Industrial or commercial units',
-                4: 'Road and rail networks and associated land',
-                5: 'Port areas',
-                6: 'Airports',
-                7: 'Mineral extraction sites',
-                8: 'Dump sites',
-                9: 'Construction sites',
-                10: 'Green urban areas',
-                11: 'Sport and leisure facilities',
-                12: 'Non-irrigated arable land',
-                13: 'Permanently irrigated land',
-                14: 'Rice fields',
-                15: 'Vineyards',
-                16: 'Fruit trees and berry plantations',
-                17: 'Olive groves',
-                18: 'Pastures',
-                19: 'Annual crops associated with permanent crops',
-                20: 'Complex cultivation patterns',
-                21: 'Land principally occupied by agriculture with significant areas of natural vegetation',
-                22: 'Agro-forestry areas',
-                23: 'Broad-leaved forest',
-                24: 'Coniferous forest',
-                25: 'Mixed forest',
-                26: 'Natural grasslands',
-                27: 'Moors and heathland',
-                28: 'Sclerophyllous vegetation',
-                29: 'Transitional woodland-shrub',
-                30: 'sands',
-                31: 'Bare rocks',
-                32: 'Sparsely vegetated areas',
-                33: 'Burnt areas',
-                34: 'Glaciers and perpetual snow',
-                35: 'Inland marshes',
-                36: 'Peat bogs',
-                37: 'Salt marshes',
-                38: 'Salines',
-                39: 'Intertidal flats',
-                40: 'Water courses',
-                41: 'Water bodies',
-                42: 'Coastal lagoons',
-                43: 'Estuaries',
-                44: 'Sea and ocean',
-                48: 'No data',
-            }
+    //define multi resolution dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/clc/' + resolution + 'm/')
+    )
 
-            let containerDiv = document.getElementById('viz-container')
+    //define colors for categories
+    const clcColors = {
+        1: '#e6004d',
+        2: '#ff0000',
+        3: '#cc4df2',
+        4: '#cc0000',
+        5: '#e6cccc',
+        6: '#e6cce6',
+        7: '#a600cc',
+        8: '#a64d00',
+        9: '#ff4dff',
+        10: '#ffa6ff',
+        11: '#ffe6ff',
+        12: '#ffffa8',
+        13: '#ffff00',
+        14: '#e6e600',
+        15: '#e68000',
+        16: '#f2a64d',
+        17: '#e6a600',
+        18: '#e6e64d',
+        19: '#ffe6a6',
+        20: '#ffe64d',
+        21: '#e6cc4d',
+        22: '#f2cca6',
+        23: '#80ff00',
+        24: '#00a600',
+        25: '#4dff00',
+        26: '#ccf24d',
+        27: '#a6ff80',
+        28: '#a6e64d',
+        29: '#a6f200',
+        30: '#e6e6e6',
+        31: '#cccccc',
+        32: '#ccffcc',
+        33: '#000000',
+        34: '#a6e6cc',
+        35: '#a6a6ff',
+        36: '#4d4dff',
+        37: '#ccccff',
+        38: '#e6e6ff',
+        39: '#a6a6e6',
+        40: '#00ccf2',
+        41: '#80f2e6',
+        42: '#00ffa6',
+        43: '#a6ffe6',
+        44: '#e6f2ff',
+        48: 'gray',
+    }
 
-            new gviz.App(containerDiv)
-                .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(2000)
-                .addMultiScaleTiledGridLayer(
-                    [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                    (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/clc/' +
-                        r +
-                        'm/',
-                    [
-                        new gviz.SquareColorCatWGLStyle({
-                            colorCol: 'clc',
-                            color: clcColors,
-                        }),
-                    ],
-                    {
-                        pixNb: 1.5,
-                        cellInfoHTML: (c) => clcLabels[c.clc],
-                    }
-                )
-        </script>
-    </body>
-</html>
+    //define labels for categories
+    const clcLabels = {
+        1: 'Continuous urban fabric',
+        2: 'Discontinuous urban fabric',
+        3: 'Industrial or commercial units',
+        4: 'Road and rail networks and associated land',
+        5: 'Port areas',
+        6: 'Airports',
+        7: 'Mineral extraction sites',
+        8: 'Dump sites',
+        9: 'Construction sites',
+        10: 'Green urban areas',
+        11: 'Sport and leisure facilities',
+        12: 'Non-irrigated arable land',
+        13: 'Permanently irrigated land',
+        14: 'Rice fields',
+        15: 'Vineyards',
+        16: 'Fruit trees and berry plantations',
+        17: 'Olive groves',
+        18: 'Pastures',
+        19: 'Annual crops associated with permanent crops',
+        20: 'Complex cultivation patterns',
+        21: 'Land principally occupied by agriculture with significant areas of natural vegetation',
+        22: 'Agro-forestry areas',
+        23: 'Broad-leaved forest',
+        24: 'Coniferous forest',
+        25: 'Mixed forest',
+        26: 'Natural grasslands',
+        27: 'Moors and heathland',
+        28: 'Sclerophyllous vegetation',
+        29: 'Transitional woodland-shrub',
+        30: 'sands',
+        31: 'Bare rocks',
+        32: 'Sparsely vegetated areas',
+        33: 'Burnt areas',
+        34: 'Glaciers and perpetual snow',
+        35: 'Inland marshes',
+        36: 'Peat bogs',
+        37: 'Salt marshes',
+        38: 'Salines',
+        39: 'Intertidal flats',
+        40: 'Water courses',
+        41: 'Water bodies',
+        42: 'Coastal lagoons',
+        43: 'Estuaries',
+        44: 'Sea and ocean',
+        48: 'No data',
+    }
+
+    //define style
+    const style = new gridviz.SquareColorCategoryWebGLStyle({
+        code: "clc",
+        color: clcColors,
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style], {
+        minPixelsPerCell: 1.5,
+        cellInfoHTML: (cell) => clcLabels[cell.clc],
+    })]
+
+</script>

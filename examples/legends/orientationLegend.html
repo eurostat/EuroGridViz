@@ -1,0 +1,37 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 600 })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.CSVGrid(map, "https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Europe/pop_2018_10km.csv", 10000)
+
+    //define style
+    const style = new gridviz.SegmentStyle({
+        orientation: (cell) => {
+            if (cell.population > 60000) return 60
+            else if (cell.population > 20000) return 40
+            else if (cell.population > 6000) return 20
+            else return 0
+        },
+        color: () => "black",
+        width: (cell, resolution, z) => resolution * 0.25
+    })
+
+    //link legend to style
+    style.legends = gridviz.orientationLegend(
+        [60, 40, 20, 0],
+        ["Very high", "High", "Low", "Very low"], {
+        title: "Population density",
+        color: () => "black",
+        width: (resolution) => resolution * 0.25
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

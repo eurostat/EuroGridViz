@@ -1,0 +1,46 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 1000 })
+        .addZoomButtons()
+
+    //define multi resolution dataset
+    const dataset = new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/5000m/',
+        {
+            preprocess: (c) => {
+                //for each cell, compute 2011 -> 2021 change and store it in a new "change" column
+                if (!c.TOT_P_2011 && !c.TOT_P_2021) c.change = 0
+                else if (!c.TOT_P_2011 && c.TOT_P_2021) c.change = +c.TOT_P_2021
+                else if (c.TOT_P_2011 && !c.TOT_P_2021) c.change = -c.TOT_P_2011
+                else c.change = c.TOT_P_2021 - c.TOT_P_2011
+                //remove unused information
+                delete c.TOT_P_2006
+                delete c.TOT_P_2011
+                delete c.TOT_P_2018
+                delete c.TOT_P_2021
+                delete c.CNTR_ID
+            }
+        }
+    )
+
+    //define color style
+    const style = new gridviz.ShapeColorSizeStyle({
+        colorCol: 'change',
+        color: (cell, resolution, z) => {
+            //use new "change" property for coloring
+            if (cell.change < -120) return "darkblue"
+            else if (cell.change < -50) return "blue"
+            else if (cell.change < 0) return "lightblue"
+            else if (cell.change < 50) return "yellow"
+            else if (cell.change < 120) return "orange"
+            else return "red"
+        },
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

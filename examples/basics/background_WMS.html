@@ -1,0 +1,19 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4480000, y: 2900000, z: 4 })
+        .addZoomButtons()
+
+    //define WMS background layer
+    const backgroundLayer = new gridviz.BackgroundLayerWMS({
+        url: 'https://sgx.geodatenzentrum.de/wms_basemapde?&service=WMS&request=GetMap&layers=de_basemapde_web_raster_grau&styles=&format=image%2Fjpeg&transparent=false&version=1.1.1&srs=EPSG%3A3035'
+    })
+
+    //add layer to map
+    map.layers = [backgroundLayer]
+    map.redraw()
+
+</script>

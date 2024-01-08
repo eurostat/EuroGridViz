@@ -1,11 +1,12 @@
 //@ts-check
 'use strict'
 
-import { Style } from '../Style.js'
+import { Style } from '../core/Style.js'
 
 /**
  * A style where each cell is represented by a segment whose length, width, color and orientation can vary according to statistical values.
  *
+ * @module style
  * @author Julien Gaffuri
  */
 export class SegmentStyle extends Style {
@@ -14,129 +15,91 @@ export class SegmentStyle extends Style {
         super(opts)
         opts = opts || {}
 
-        /** A function returning the orientation (in degrees) of the segment representing a cell.
-         * @type {function(import("../Dataset").Cell):number} */
-        this.orientation = opts.orientation || (() => 0)
-
-        /**
-         * @type {string} */
-        this.colorCol = opts.colorCol
-
         /** A function returning the color of the cell segment.
-         * @type {function(number,number,import("../Style").Stat|undefined):string} */
-        this.color = opts.color || (() => '#EA6BAC')
-
-        /**
-         * @type {string} */
-        this.lengthCol = opts.lengthCol
-
-        /** A function returning the length of the segment representing a cell, in geo unit
-         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-        this.length = opts.length
-
-        /**
-         * @type {string} */
-        this.widthCol = opts.widthCol
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):string} */
+        this.color = opts.color || (() => "#EA6BAC") //(c,r,z,vs) => {}
 
         /** A function returning the width of the segment representing a cell, in geo unit
-         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-        this.width = opts.width
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):number} */
+        this.width = opts.width || ((cell, resolution) => resolution * 0.1)  //(c,r,z,vs) => {}
+
+        /** A function returning the length of the segment representing a cell, in geo unit
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):number} */
+        this.length = opts.length || ((cell, resolution) => resolution * 0.9)  //(c,r,z,vs) => {}
+
+        /** A function returning the orientation (in degrees) of the segment representing a cell.
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):number} */
+        this.orientation = opts.orientation || (() => 180 * Math.random()) //(c,r,z,vs) => {}
     }
 
     /**
      * Draw cells as segments.
      *
-     * @param {Array.<import("../Dataset").Cell>} cells
-     * @param {number} r
-     * @param {import("../GeoCanvas").GeoCanvas} cg
+     * @param {Array.<import("../core/Dataset").Cell>} cells
+     * @param {import("../core/GeoCanvas").GeoCanvas} geoCanvas
+     * @param {number} resolution
      */
-    draw(cells, r, cg) {
+    draw(cells, geoCanvas, resolution) {
+
         //filter
         if (this.filter) cells = cells.filter(this.filter)
 
-        //zoom factor
-        const zf = cg.getZf()
+        //
+        const z = geoCanvas.view.z
 
-        let statColor
-        if (this.colorCol) {
-            //compute color variable statistics
-            statColor = Style.getStatistics(cells, (c) => c[this.colorCol], true)
-        }
-
-        let statLength
-        if (this.lengthCol) {
-            //if length is used, sort cells by length so that the longests are drawn first
-            cells.sort((c1, c2) => c2[this.lengthCol] - c1[this.lengthCol])
-            //and compute size variable statistics
-            statLength = Style.getStatistics(cells, (c) => c[this.lengthCol], true)
-        }
-
-        let statWidth
-        if (this.widthCol) {
-            //and compute size variable statistics
-            statWidth = Style.getStatistics(cells, (c) => c[this.widthCol], true)
-        }
+        //get view scale
+        const viewScale = this.viewScale ? this.viewScale(cells, resolution, z) : undefined
 
         //
-        cg.ctx.lineCap = 'butt'
+        geoCanvas.ctx.lineCap = 'butt'
 
         //conversion factor degree -> radian
         const f = Math.PI / 180
 
-        //draw in geo coordinates
-        cg.setCanvasTransform()
-
-        for (let c of cells) {
+        for (let cell of cells) {
             //color
             /** @type {string|undefined} */
-            const col = this.color ? this.color(c[this.colorCol], r, statColor) : undefined
+            const col = this.color ? this.color(cell, resolution, z, viewScale) : undefined
             if (!col) continue
 
             //width
             /** @type {number|undefined} */
-            const wG = this.width ? this.width(c[this.widthCol], r, statWidth, zf) : undefined
+            const wG = this.width ? this.width(cell, resolution, z, viewScale) : undefined
             if (!wG || wG < 0) continue
 
             //length
             /** @type {number|undefined} */
-            const lG = this.length ? this.length(c[this.lengthCol], r, statLength, zf) : undefined
+            const lG = this.length ? this.length(cell, resolution, z, viewScale) : undefined
             if (!lG || lG < 0) continue
 
             //orientation (in radian)
             /** @type {number} */
-            const or = this.orientation(c) * f
+            const or = this.orientation(cell, resolution, z, viewScale) * f
             if (or === undefined || isNaN(or)) continue
 
             //get offset
-            const offset = this.offset(c, r, zf)
+            const offset = this.offset(cell, resolution, z)
 
             //set color and width
-            cg.ctx.strokeStyle = col
-            cg.ctx.lineWidth = wG
+            geoCanvas.ctx.strokeStyle = col
+            geoCanvas.ctx.lineWidth = wG
 
             //compute segment centre postition
-            const cx = c.x + r / 2 + offset.dx
-            const cy = c.y + r / 2 + offset.dy
+            const cx = cell.x + resolution / 2 + offset.dx
+            const cy = cell.y + resolution / 2 + offset.dy
 
             //compute segment direction
             const dx = 0.5 * Math.cos(or) * lG
             const dy = 0.5 * Math.sin(or) * lG
 
             //draw segment
-            cg.ctx.beginPath()
-            cg.ctx.moveTo(cx - dx, cy - dy)
-            cg.ctx.lineTo(cx + dx, cy + dy)
-            cg.ctx.stroke()
+            geoCanvas.ctx.beginPath()
+            geoCanvas.ctx.moveTo(cx - dx, cy - dy)
+            geoCanvas.ctx.lineTo(cx + dx, cy + dy)
+            geoCanvas.ctx.stroke()
         }
 
-        //update legend, if any
-        this.updateLegends({
-            widthFun: this.width,
-            r: r,
-            zf: zf,
-            sColor: statColor,
-            //sLength: statLength,
-            sWidth: statWidth,
-        })
+        //update legends
+        this.updateLegends({ viewScale: viewScale, resolution: resolution, z: z, cells: cells })
     }
 }

@@ -1,0 +1,40 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 3000 })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.CSVGrid(map, "https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Europe/pop_2018_10km.csv", 10000)
+
+    //define classifier
+    const classifier = gridviz.colorClassifier(
+        //the class breaks
+        [1000, 2000, 5000, 7000, 15000, 25000, 50000],
+        //the colors, for each class
+        ["rgb(255, 255, 204)", "rgb(255, 234, 154)", "rgb(254, 205, 106)", "rgb(254, 162, 70)", "rgb(252, 105, 50)", "rgb(233, 42, 33)", "rgb(192, 6, 36)", "rgb(128, 0, 38)"]
+    )
+
+    //define style, based on the classifier
+    const style = new gridviz.ShapeColorSizeStyle({
+        color: (cell) => classifier(cell.population)
+    })
+
+    //define legend
+    const legend = new gridviz.ColorDiscreteLegend({
+        title: "Population",
+        width: 450,
+        colors: () => classifier.colors,
+        breaks: () => classifier.breaks,
+    })
+
+    //link legend to style
+    style.legends = [legend]
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

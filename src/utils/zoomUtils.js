@@ -4,7 +4,7 @@
 /**
  *
  * @param {import("../App").App} app
- * @param {number} zfTarget
+ * @param {number} zTarget
  * @param {number} factor
  * @param {number} delayMs
  * @param {function|undefined} callback
@@ -13,7 +13,7 @@
  */
 export function zoomTo(
     app,
-    zfTarget,
+    zTarget,
     factor = 1.01,
     delayMs = 0,
     callback = undefined,
@@ -26,22 +26,22 @@ export function zoomTo(
         factor = 1.01
     }
 
-    const zfIni = app.getZoomFactor()
-    if (zfTarget == zfIni) return
-    if (zfTarget < zfIni) factor = 1 / factor
-    let zf = zfIni
+    const zIni = map.getZoom()
+    if (zTarget == zIni) return
+    if (zTarget < zIni) factor = 1 / factor
+    let z = zIni
     let timer = setInterval(() => {
         //compute new zoom level
-        zf = app.getZoomFactor() * factor
-        if (zfTarget > zfIni && zf > zfTarget) zf = zfTarget
-        if (zfTarget < zfIni && zf < zfTarget) zf = zfTarget
+        z = map.getZoom() * factor
+        if (zTarget > zIni && z > zTarget) z = zTarget
+        if (zTarget < zIni && z < zTarget) z = zTarget
 
         //set new zoom level
-        app.setZoomFactor(zf)
-        app.redraw()
+        map.setZoom(z)
+        map.redraw()
 
         //target reached
-        if (zf == zfTarget) {
+        if (z == zTarget) {
             clearInterval(timer)
             //trigger callback, if any
             if (callback)
@@ -58,7 +58,7 @@ export function zoomTo(
  * @param {import("../App").App} app
  * @param {number} xTarget
  * @param {number} yTarget
- * @param {number} zfTarget
+ * @param {number} zTarget
  * @param {number} progressFactorPix
  * @param {number} delayMs
  * @param {function|undefined} callback
@@ -69,38 +69,38 @@ export function goToStraight(
     app,
     xTarget = NaN,
     yTarget = NaN,
-    zfTarget = NaN,
+    zTarget = NaN,
     progressFactorPix = 5,
     delayMs = 0,
     callback = undefined,
     delayBeforeCallBackMs = 0
 ) {
     //store initial position/zoom
-    const zfIni = app.getZoomFactor()
-    const cIni = app.getGeoCenter()
+    const zIni = map.getZoom()
+    const cIni = map.getView()
 
     //default
     xTarget = isNaN(xTarget) ? cIni.x : xTarget
     yTarget = isNaN(yTarget) ? cIni.y : yTarget
-    zfTarget = isNaN(zfTarget) ? zfIni : zfTarget
+    zTarget = isNaN(zTarget) ? zIni : zTarget
 
     //prepare for pan
     const dx = xTarget - cIni.x
     const dy = yTarget - cIni.y
     let d = Math.hypot(dx, dy)
-    const ddx = (progressFactorPix * zfIni * dx) / d
-    const ddy = (progressFactorPix * zfIni * dy) / d
+    const ddx = (progressFactorPix * zIni * dx) / d
+    const ddy = (progressFactorPix * zIni * dy) / d
 
     //prepare for zoom
-    let r = zfTarget / zfIni
-    const n = d / (progressFactorPix * zfIni)
+    let r = zTarget / zIni
+    const n = d / (progressFactorPix * zIni)
     const zoomFactor = d > 0 ? Math.pow(r, 1 / n) : Math.pow(r, 1 / 10) //TODO not 10 ?
 
     //timer
     let timer = setInterval(() => {
         //compute and set new position
         if (d > 0) {
-            const c = app.getGeoCenter()
+            const c = map.getView()
             let nx = c.x + ddx
             let ny = c.y + ddy
             //if went too far, stop at target values
@@ -108,23 +108,23 @@ export function goToStraight(
             if (c.x < xTarget && xTarget < nx) nx = xTarget
             if (ny < yTarget && yTarget < c.y) ny = yTarget
             if (c.y < yTarget && yTarget < ny) ny = yTarget
-            app.setGeoCenter({ x: nx, y: ny })
+            map.setGeoCenter({ x: nx, y: ny })
             if (nx == xTarget && ny == yTarget) d = 0
         }
 
         //compute and set new zoom
         if (r != 1) {
-            const zf = app.getZoomFactor()
-            let nzf = zoomFactor * zf
+            const z = map.getZoom()
+            let nz = zoomFactor * z
             //if went too far, stop at target values
-            if (nzf < zfTarget && zfTarget < zf) nzf = zfTarget
-            if (zf < zfTarget && zfTarget < nzf) nzf = zfTarget
-            app.setZoomFactor(nzf)
-            if (nzf == zfTarget) r = 1
+            if (nz < zTarget && zTarget < z) nz = zTarget
+            if (z < zTarget && zTarget < nz) nz = zTarget
+            map.setZoom(nz)
+            if (nz == zTarget) r = 1
         }
 
         //redraw
-        app.redraw()
+        map.redraw()
 
         //if target reached, stop
         if (d == 0 && r == 1) {

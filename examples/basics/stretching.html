@@ -1,0 +1,113 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+<div style="
+position: absolute;
+left: 20px;
+top: 20px;
+width: auto;
+height: auto;
+padding: 10px;
+border: 0px;
+border-radius: 5px;
+background: #ffffffcc;
+line-height: 1.6;
+box-shadow: 5px 5px 5px grey;
+font-family: Arial, Helvetica, sans-serif;
+">
+    Function:
+    <select id="fun" style="font-size: 1em">
+        <option value="log" selected>Logarithmic</option>
+        <option value="exp">Exponential</option>
+        <option value="pow">Power</option>
+        <option value="powInv">Power inverse</option>
+        <option value="circle">Circular</option>
+        <option value="circleInv">Circular inverse</option>
+    </select>
+    <div id="alphaText">Base: -10</div>
+    <input type="range" min="-30" max="0" step="1" value="-10" id="base" style="width: 300px; display: initial" />
+    <input type="range" min="0" max="1" step="0.02" value="0.3" id="exponent" style="width: 300px; display: none" />
+    <input type="range" min="0" max="1" step="0.02" value="0.3" id="circularity" style="width: 300px; display: none" />
+</div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
+
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4000000, y: 2960000, z: 600, backgroundColor: "black" })
+        .addZoomButtons()
+
+    const dataset = new gridviz.MultiResolutionDataset(
+        [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/')
+    )
+
+    const style = new gridviz.SquareColorWebGLStyle({
+        viewScale: (cells) => d3.extent(cells, c => +c.TOT_P_2021),
+        tFun: (c, r, z, [min, max]) => (+c.TOT_P_2021 - min) / (max - min),
+        color: d3.interpolateMagma,
+        //stretching: { fun: 'log', alpha: -7 },
+    })
+
+    const gridLayer = new gridviz.GridLayer(dataset, [style, new gridviz.StrokeStyle({ visible: (z) => z < 15 })], {
+        minPixelsPerCell: 2,
+        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant' + (c.TOT_P_2021 == 1 ? '' : 's')
+    })
+
+    //define background layer
+    const backgroundLayer = new gridviz.BackgroundLayer(gridviz_eurostat.giscoBackgroundLayer("GreyEarth", 7, "EPSG3035", { filterColor: () => '#000000d1' }))
+
+    //define boundaries layer
+    const boundariesLayer = new gridviz.GeoJSONLayer(gridviz_eurostat.getEurostatBoundariesLayer())
+
+    //define label layer
+    const labelLayer = new gridviz.LabelLayer(gridviz_eurostat.getEuronymeLabelLayer('EUR', 20, { dark: true }))
+
+    //add layers to map
+    map.layers = [backgroundLayer, gridLayer, boundariesLayer, labelLayer]
+
+    const update = () => {
+
+        //get stretching function
+        const fun = document.querySelector('#fun').value
+
+        //get alpha
+        let a
+        if (fun == 'exp' || fun == 'log') {
+            document.getElementById('base').style.display = 'initial'
+            document.getElementById('exponent').style.display = 'none'
+            document.getElementById('circularity').style.display = 'none'
+            a = +document.querySelector('#base').value
+            document.getElementById('alphaText').textContent = 'Base: ' + a
+        } else if (fun == 'pow' || fun == 'powInv') {
+            document.getElementById('base').style.display = 'none'
+            document.getElementById('exponent').style.display = 'initial'
+            document.getElementById('circularity').style.display = 'none'
+            a = +document.querySelector('#exponent').value
+            document.getElementById('alphaText').textContent = 'Exponent: ' + a
+        } else if (fun == 'circle' || fun == 'circleInv') {
+            document.getElementById('base').style.display = 'none'
+            document.getElementById('exponent').style.display = 'none'
+            document.getElementById('circularity').style.display = 'initial'
+            a = +document.querySelector('#circularity').value
+            document.getElementById('alphaText').textContent = 'Circularity: ' + a
+        }
+
+        //set style stretching function
+        style.stretching = { fun: fun, alpha: a }
+
+        //redraw
+        map.redraw()
+    }
+
+    //
+    document.getElementById('fun').addEventListener('change', update)
+    document.getElementById('base').addEventListener('input', update)
+    document.getElementById('exponent').addEventListener('input', update)
+    document.getElementById('circularity').addEventListener('input', update)
+
+    update()
+
+</script>

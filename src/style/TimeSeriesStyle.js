@@ -1,7 +1,7 @@
 //@ts-check
 'use strict'
 
-import { Style } from '../Style.js'
+import { Style } from '../core/Style.js'
 
 /** @typedef {"first"|"bottom"|"center"|"top"|"last"} AnchorModeYEnum */
 
@@ -9,6 +9,7 @@ import { Style } from '../Style.js'
  * Show cell as timeseries chart
  * Can be used for sparkline map of https://datagistips.hypotheses.org/488
  *
+ * @module style
  * @author Julien Gaffuri
  */
 export class TimeSeriesStyle extends Style {
@@ -27,65 +28,46 @@ export class TimeSeriesStyle extends Style {
 
         //x
         /** in geo unit
-         * @type {function(import("../Dataset.js").Cell,number,number):number} */
-        this.offsetX = opts.offsetX || ((c, r, zf) => 0)
-        /** @type {function(import("../Dataset.js").Cell,number,number):number} */
-        this.width = opts.width || ((c, r, zf) => r)
+         * @type {function(import("../core/Dataset.js").Cell,number,number):number} */
+        this.offsetX = opts.offsetX || ((c, r, z) => 0)
+        /** @type {function(import("../core/Dataset.js").Cell,number,number):number} */
+        this.width = opts.width || ((c, r, z) => r)
 
         //y
         /** in geo unit
-         * @type {function(import("../Dataset.js").Cell,number,number):number} */
-        this.offsetY = opts.offsetY || ((c, r, zf) => 0)
-        /** @type {function(import("../Dataset.js").Cell,number,number):number} */
-        this.height = opts.height || ((c, r, zf) => r)
-        /** @type {function(import("../Dataset.js").Cell,number,number):AnchorModeYEnum} */
-        this.anchorModeY = opts.anchorModeY || ((c, r, zf) => "center")
-
-
-        /**
-         * @type {string} */
-        this.lineWidthCol = opts.lineWidthCol
+         * @type {function(import("../core/Dataset.js").Cell,number,number):number} */
+        this.offsetY = opts.offsetY || ((c, r, z) => 0)
+        /** @type {function(import("../core/Dataset.js").Cell,number,number):number} */
+        this.height = opts.height || ((c, r, z) => r)
+        /** @type {function(import("../core/Dataset.js").Cell,number,number):AnchorModeYEnum} */
+        this.anchorModeY = opts.anchorModeY || ((c, r, z) => "center")
 
         /** A function returning the width of the line, in geo unit
-         * @type {function(number,number,import("../Style.js").Stat|undefined,number):number} */
-        this.lineWidth = opts.lineWidth || ((v, r, s, zf) => 1.5 * zf)
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):number} */
+        this.lineWidth = opts.lineWidth || ((v, r, s, z) => 1.5 * z)
 
-        /**
-         * @type {string} */
-        this.colorCol = opts.colorCol
-
-        /** A function returning the color of the cell.
-         * @type {function(number,number,import("../Style.js").Stat|undefined,number):string} */
-        this.color = opts.color || ((v, r, s, zf) => 'black')
-
+        /** A function returning the color of the chart.
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):string} */
+        this.color = opts.color || (() => "black") //(c,r,z,vs) => {}
     }
 
     /**
      * Draw cells as text.
      *
-     * @param {Array.<import("../Dataset.js").Cell>} cells
-     * @param {number} r
-     * @param {import("../GeoCanvas.js").GeoCanvas} cg
+     * @param {Array.<import("../core/Dataset.js").Cell>} cells
+     * @param {import("../core/GeoCanvas.js").GeoCanvas} geoCanvas
+     * @param {number} resolution
      */
-    draw(cells, r, cg) {
+    draw(cells, geoCanvas, resolution) {
 
         //filter
         if (this.filter) cells = cells.filter(this.filter)
 
-        //zoom factor
-        const zf = cg.getZf()
+        //
+        const z = geoCanvas.view.z
 
-        let statWidth
-        if (this.lineWidthCol) {
-            //and compute size variable statistics
-            statWidth = Style.getStatistics(cells, (c) => c[this.lineWidthCol], true)
-        }
-
-        let statColor
-        if (this.colorCol) {
-            //compute color variable statistics
-            statColor = Style.getStatistics(cells, (c) => c[this.colorCol], true)
-        }
+        //get view scale
+        const viewScale = this.viewScale ? this.viewScale(cells, resolution, z) : undefined
 
         //compute cell amplitude
         const getAmplitude = c => {
@@ -111,40 +93,36 @@ export class TimeSeriesStyle extends Style {
 
         const nb = this.ts.length
 
-        //draw with HTML canvas
-        //in geo coordinates
-        cg.setCanvasTransform()
-
-        cg.ctx.lineCap = "butt"
+        geoCanvas.ctx.lineCap = "butt"
         for (let c of cells) {
 
             //line width
             /** @type {number|undefined} */
-            const wG = this.lineWidth ? this.lineWidth(c[this.lineWidthCol], r, statWidth, zf) : undefined
+            const wG = this.lineWidth ? this.lineWidth(c, resolution, z, viewScale) : undefined
             if (!wG || wG < 0) continue
 
             //line color
             /** @type {string|undefined} */
-            const col = this.color ? this.color(c[this.colorCol], r, statColor, zf) : undefined
+            const col = this.color ? this.color(c, resolution, z, viewScale) : undefined
             if (!col) continue
 
 
             //x
-            const offX = this.offsetX ? this.offsetX(c, r, zf) : 0
+            const offX = this.offsetX ? this.offsetX(c, resolution, z) : 0
             if (offX == undefined || isNaN(offX)) continue
-            const w = this.width ? this.width(c, r, zf) : r
+            const w = this.width ? this.width(c, resolution, z) : resolution
             if (w == undefined || isNaN(w)) continue
 
             //y
-            const offY = this.offsetY ? this.offsetY(c, r, zf) : 0
+            const offY = this.offsetY ? this.offsetY(c, resolution, z) : 0
             if (offY == undefined || isNaN(offY)) continue
-            const h = this.height ? this.height(c, r, zf) : r
+            const h = this.height ? this.height(c, resolution, z) : resolution
             if (h == undefined || isNaN(h)) continue
-            const anchY = this.anchorModeY ? this.anchorModeY(c, r, zf) : "center"
+            const anchY = this.anchorModeY ? this.anchorModeY(c, resolution, z) : "center"
             if (!anchY) continue
 
-            cg.ctx.lineWidth = wG
-            cg.ctx.strokeStyle = col
+            geoCanvas.ctx.lineWidth = wG
+            geoCanvas.ctx.strokeStyle = col
 
             //compute anchor Y figures
             let val0, y0
@@ -171,7 +149,7 @@ export class TimeSeriesStyle extends Style {
                     if (val == undefined) continue
                     if (val0 == undefined || val > val0) val0 = val
                 }
-                y0 = r
+                y0 = resolution
             } else if (anchY === "center") {
                 //get min and max
                 let min, max
@@ -182,7 +160,7 @@ export class TimeSeriesStyle extends Style {
                     if (max == undefined || val > max) max = val
                 }
                 val0 = (+max + +min) * 0.5
-                y0 = r / 2
+                y0 = resolution / 2
             } else {
                 console.log("Unexpected anchorModeY: " + anchY)
                 continue;
@@ -209,8 +187,8 @@ export class TimeSeriesStyle extends Style {
             //handle first point
             let v0 = c[this.ts[0]]
             if (!this.noData(v0)) {
-                cg.ctx.beginPath()
-                cg.ctx.moveTo(c.x + offX, c.y + y0 + (v0 - val0) * h / ampMax + offY)
+                geoCanvas.ctx.beginPath()
+                geoCanvas.ctx.moveTo(c.x + offX, c.y + y0 + (v0 - val0) * h / ampMax + offY)
             }
             //console.log(v0, isNaN(v0))
 
@@ -225,18 +203,18 @@ export class TimeSeriesStyle extends Style {
 
                     //second point 'no data'
                 } else if (!this.noData(v0) && this.noData(v1)) {
-                    cg.ctx.stroke()
+                    geoCanvas.ctx.stroke()
 
                     //first point 'no data'
                 } else if (this.noData(v0) && !this.noData(v1)) {
-                    cg.ctx.beginPath()
-                    cg.ctx.moveTo(c.x + i * sX + offX, c.y + y0 + (v1 - val0) * h / ampMax + offY)
+                    geoCanvas.ctx.beginPath()
+                    geoCanvas.ctx.moveTo(c.x + i * sX + offX, c.y + y0 + (v1 - val0) * h / ampMax + offY)
 
                     //both points have data: trace line
                 } else {
-                    cg.ctx.lineTo(c.x + i * sX + offX, c.y + y0 + (v1 - val0) * h / ampMax + offY)
+                    geoCanvas.ctx.lineTo(c.x + i * sX + offX, c.y + y0 + (v1 - val0) * h / ampMax + offY)
                     //if it is the last point, stroke
-                    if (i == nb - 1) cg.ctx.stroke()
+                    if (i == nb - 1) geoCanvas.ctx.stroke()
                 }
                 v0 = v1
             }
@@ -244,15 +222,7 @@ export class TimeSeriesStyle extends Style {
         }
 
         //update legend, if any
-        this.updateLegends({
-            widthFun: this.lineWidth,
-            r: r,
-            zf: zf,
-            sColor: statColor,
-            //sLength: statLength,
-            sWidth: statWidth,
-        })
-
+        this.updateLegends({ style: this, resolution: resolution, z: z, viewScale: viewScale })
     }
 
 }

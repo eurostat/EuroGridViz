@@ -1,0 +1,22 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4200000, y: 2600000, z: 300, backgroundColor: "#EADDCA" })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/clc/500m/', {
+        //select only the cells with 'clc' property equal to '41'
+        preprocess: (cell) => cell.clc == "41"
+    })
+
+    //define color style
+    const style = new gridviz.SquareColorCategoryWebGLStyle({ code: "clc", color: { 41: '#1ca3ec' } })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

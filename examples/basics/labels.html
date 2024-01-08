@@ -1,0 +1,29 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 2, y: 46, z: 0.03 })
+        .addZoomButtons()
+
+    //define label layer
+    const labelLayer = new gridviz.LabelLayer({
+        //input csv file with label data
+        url: 'https://raw.githubusercontent.com/eurostat/euronym/main/pub/v2/UTF/50/EUR.csv',
+        //set x,y position for each label
+        preprocess: (label) => { label.x = label.lon; label.y = label.lat },
+        //set label style depending on zoom level
+        style: (label, zoom) => {
+            if (label.rs < zoom * 70000) return
+            if (label.r1 < zoom * 70000) return '1em Arial'
+            return '1.5em Arial'
+        },
+        haloColor: () => 'cyan',
+    })
+
+    //add layer to map
+    map.layers = [labelLayer]
+    map.redraw()
+
+</script>

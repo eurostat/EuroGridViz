@@ -1,13 +1,13 @@
 //@ts-check
 'use strict'
 
-import { Style } from '../Style.js'
-import { color } from 'd3-color'
+import { Style } from '../core/Style.js'
 
 /**
  * A very generic style that shows grid cells with specific color, size and shape.
  * It can be used to show variables as cell colors, cell size, cell shape, or any combination of the three visual variables.
  *
+ * @module style
  * @author Joseph Davies, Julien Gaffuri
  */
 export class ShapeColorSizeStyle extends Style {
@@ -16,137 +16,89 @@ export class ShapeColorSizeStyle extends Style {
         super(opts)
         opts = opts || {}
 
-        /** The name of the column/attribute of the tabular data where to retrieve the variable for color.
-         * @type {string} */
-        this.colorCol = opts.colorCol
-
         /** A function returning the color of the cell.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):string} */
-        this.color = opts.color || (() => '#EA6BAC') //(v,r,s,zf) => {}
-
-        /** The name of the column/attribute of the tabular data where to retrieve the variable for size.
-         * @type {string} */
-        this.sizeCol = opts.sizeCol
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):string} */
+        this.color = opts.color || (() => "#EA6BAC") //(c,r,z,vs) => {}
 
         /** A function returning the size of a cell in geographical unit.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-        this.size = opts.size
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):number} */
+        this.size = opts.size || ((cell, resolution) => resolution) //(c,r,z,vs) => {}
 
         /** A function returning the shape of a cell.
-         * @type {function(import("../Dataset").Cell):import("../Style").Shape} */
-        this.shape = opts.shape || (() => 'square')
-
-        /** The name of the column/attribute of the tabular data where to retrieve the variable for color alpha.
-         * @type {string} */
-        this.alphaCol = opts.alphaCol
-
-        /** A function returning the color alpha of the cell.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-        this.alphaF = opts.alphaF
+         * @type {function(import("../core/Dataset.js").Cell,number, number,object):import("../core/Style.js").Shape} */
+        this.shape = opts.shape || (() => "square") //(c,r,z,vs) => {}
     }
 
     /**
-     * Draw cells as squares, with various colors and size.
-     *
-     * @param {Array.<import("../Dataset").Cell>} cells
-     * @param {number} r
-     * @param {import("../GeoCanvas").GeoCanvas} cg
+     * Draw cells as squares, with various colors and sizes.
+     * 
+     * @param {Array.<import("../core/Dataset.js").Cell>} cells
+     * @param {import("../core/GeoCanvas.js").GeoCanvas} geoCanvas
+     * @param {number} resolution
+     * @override
      */
-    draw(cells, r, cg) {
+    draw(cells, geoCanvas, resolution) {
+
         //filter
         if (this.filter) cells = cells.filter(this.filter)
 
-        //zoom factor
-        const zf = cg.getZf()
+        //zoom
+        const z = geoCanvas.view.z
 
-        let statSize
-        if (this.sizeCol) {
-            //if size is used, sort cells by size so that the biggest are drawn first
-            cells.sort((c1, c2) => c2[this.sizeCol] - c1[this.sizeCol])
-            //and compute size variable statistics
-            statSize = Style.getStatistics(cells, (c) => c[this.sizeCol], true)
-        }
+        //get view scale
+        const viewScale = this.viewScale ? this.viewScale(cells, resolution, z) : undefined
 
-        let statColor
-        if (this.colorCol) {
-            //compute color variable statistics
-            statColor = Style.getStatistics(cells, (c) => c[this.colorCol], true)
-        }
-
-        let statAlpha
-        if (this.alphaCol) {
-            //compute color alpha variable statistics
-            statAlpha = Style.getStatistics(cells, (c) => c[this.alphaCol], true)
-        }
-
-        //draw with HTML canvas
-        //in geo coordinates
-        cg.setCanvasTransform()
-
-        const r2 = r * 0.5
-        for (let cell of cells) {
+        const r2 = resolution * 0.5
+        for (let c of cells) {
             //color
-            let col = this.color ? this.color(cell[this.colorCol], r, statColor, zf) : undefined
+            let col = this.color ? this.color(c, resolution, z, viewScale) : "black"
             if (!col || col === 'none') continue
 
-            //alpha
-            if (this.alphaCol && this.alphaF) {
-                //get alpha
-                const alpha = this.alphaF(cell[this.alphaCol], r, statAlpha, zf)
-                if (alpha == 0) continue
-                //apply alpha to color col
-                const col_ = color(col);
-                if (col_) col = `rgba(${col_.r}, ${col_.g}, ${col_.b}, ${alpha})`;
-                else console.warn("Could not decode color " + col + " in ShapeColorSizeStyle")
-            }
+            //size
+            const size = this.size ? this.size(c, resolution, z, viewScale) : resolution
+            if (!size) continue
 
             //shape
-            const shape = this.shape ? this.shape(cell) : 'square'
+            const shape = this.shape ? this.shape(c, resolution, z, viewScale) : 'square'
             if (shape === 'none') continue
 
-            //size
-            /** @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-            let s_ = this.size || (() => r)
-            //size - in geo unit
-            const sG = s_(cell[this.sizeCol], r, statSize, zf)
-
             //get offset
-            const offset = this.offset(cell, r, zf)
+            const offset = this.offset(c, resolution, z)
 
-            cg.ctx.fillStyle = col
+            geoCanvas.ctx.fillStyle = col
             if (shape === 'square') {
                 //draw square
-                const d = r * (1 - sG / r) * 0.5
-                cg.ctx.fillRect(cell.x + d + offset.dx, cell.y + d + offset.dy, sG, sG)
+                const d = resolution * (1 - size / resolution) * 0.5
+                geoCanvas.ctx.fillRect(c.x + d + offset.dx, c.y + d + offset.dy, size, size)
             } else if (shape === 'circle') {
                 //draw circle
-                cg.ctx.beginPath()
-                cg.ctx.arc(cell.x + r2 + offset.dx, cell.y + r2 + offset.dy, sG * 0.5, 0, 2 * Math.PI, false)
-                cg.ctx.fill()
+                geoCanvas.ctx.beginPath()
+                geoCanvas.ctx.arc(c.x + r2 + offset.dx, c.y + r2 + offset.dy, size * 0.5, 0, 2 * Math.PI, false)
+                geoCanvas.ctx.fill()
             } else if (shape === 'donut') {
                 //draw donut
-                const xc = cell.x + r2 + offset.dx,
-                    yc = cell.y + r2 + offset.dy
-                cg.ctx.beginPath()
-                cg.ctx.moveTo(xc, yc)
-                cg.ctx.arc(xc, yc, r2, 0, 2 * Math.PI)
-                cg.ctx.arc(xc, yc, (1 - sG / r) * r2, 0, 2 * Math.PI, true)
-                cg.ctx.closePath()
-                cg.ctx.fill()
+                const xc = c.x + r2 + offset.dx,
+                    yc = c.y + r2 + offset.dy
+                geoCanvas.ctx.beginPath()
+                geoCanvas.ctx.moveTo(xc, yc)
+                geoCanvas.ctx.arc(xc, yc, r2, 0, 2 * Math.PI)
+                geoCanvas.ctx.arc(xc, yc, (1 - size / resolution) * r2, 0, 2 * Math.PI, true)
+                geoCanvas.ctx.closePath()
+                geoCanvas.ctx.fill()
             } else if (shape === 'diamond') {
-                const s2 = sG * 0.5
-                cg.ctx.beginPath()
-                cg.ctx.moveTo(cell.x + r2 - s2, cell.y + r2)
-                cg.ctx.lineTo(cell.x + r2, cell.y + r2 + s2)
-                cg.ctx.lineTo(cell.x + r2 + s2, cell.y + r2)
-                cg.ctx.lineTo(cell.x + r2, cell.y + r2 - s2)
-                cg.ctx.fill()
+                const s2 = size * 0.5
+                geoCanvas.ctx.beginPath()
+                geoCanvas.ctx.moveTo(c.x + r2 - s2, c.y + r2)
+                geoCanvas.ctx.lineTo(c.x + r2, c.y + r2 + s2)
+                geoCanvas.ctx.lineTo(c.x + r2 + s2, c.y + r2)
+                geoCanvas.ctx.lineTo(c.x + r2, c.y + r2 - s2)
+                geoCanvas.ctx.fill()
             } else {
                 throw new Error('Unexpected shape:' + shape)
             }
         }
 
         //update legends
-        this.updateLegends({ style: this, r: r, zf: zf, sSize: statSize, sColor: statColor, sAlpha: statAlpha })
+        this.updateLegends({ viewScale: viewScale, resolution: resolution, z: z, cells: cells })
     }
 }

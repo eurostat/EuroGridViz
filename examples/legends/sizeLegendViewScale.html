@@ -1,0 +1,37 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-format@3"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 3000 })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/')
+    )
+
+    //define style
+    const style = new gridviz.ShapeColorSizeStyle({
+        size: (c, r, z, viewScale) => viewScale(c.TOT_P_2021),
+        viewScale: gridviz.viewScale({ valueFunction: (c) => +c.TOT_P_2021, maxSizeFactor: 1.3, stretching: gridviz.logarithmicScale(-8) }),
+        shape: () => "circle",
+        color: () => "black"
+    })
+
+    style.legends = gridviz.sizeLegendViewScale(
+        cell => +cell.TOT_P_2021, {
+        k: [0.8, 0.2, 0.01, 0.002],
+        title: "Population",
+        fillColor: "black",
+        labelFormat: d3.format(',.2r')
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style], { minPixelsPerCell: 5 })]
+
+</script>

@@ -1,0 +1,31 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 3700000, y: 2800000, z: 40, zoomExtent: [20, 200] })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/men/2019/1000m/',
+        { preprocess: (c) => { c.men_2_4ind = +c.men - +c.men_1ind - +c.men_5ind } }
+    )
+
+    //define style
+    const style = new gridviz.CompositionStyle({
+        color: {
+            men_1ind: '#7570b3',  //blue
+            men_2_4ind: '#1b9e77', //green
+            men_5ind: '#d95f02', //orange
+        },
+        type: () => 'piechart',
+        size: (c, r, z, scale) => scale(+c.men),
+        viewScale: gridviz.viewScaleQuantile({ valueFunction: (c) => +c.men, classNumber: 5, minSizePix: 2 }),
+        offsetAngle: () => 90,
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

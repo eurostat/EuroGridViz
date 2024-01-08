@@ -3,6 +3,7 @@ import { Button } from './Button.js'
 /**
  * Button for toggling fullscreen mode
  *
+ * @module button
  * @author Joseph Davies, Julien Gaffuri
  */
 export class ZoomButtons extends Button {
@@ -83,13 +84,13 @@ export class ZoomButtons extends Button {
 
     /* Zoom in */
     zoomIn(e) {
-        this.app.setZoomFactor(this.app.getZoomFactor() * (1 - this.delta)).redraw()
+        this.map.setZoom(this.map.getZoom() * (1 - this.delta)).redraw()
         if (this.onZoom) this.onZoom(e)
     }
 
     /* Zoom out */
     zoomOut(e) {
-        this.app.setZoomFactor(this.app.getZoomFactor() * (1 + this.delta)).redraw()
+        this.map.setZoom(this.map.getZoom() * (1 + this.delta)).redraw()
         if (this.onZoom) this.onZoom(e)
     }
 }

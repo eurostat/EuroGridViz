@@ -1,0 +1,51 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 50, y: 50, z: 0.3 })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.JSGrid(
+        //the cells resolution
+        10,
+        //the cells, one by one, in plain javascript
+        [
+            { x: 0, y: 0, type: "a", value: 43 },
+            { x: 0, y: 10, type: "b", value: 7 },
+            { x: 10, y: 10, type: "b", value: 61 },
+            { x: 10, y: 80, type: "b", value: 1 },
+            { x: 10, y: 90, type: "b", value: 38 },
+            { x: 20, y: 20, type: "b", value: 5 },
+            { x: 30, y: 20, type: "c", value: 67 },
+            { x: 30, y: 70, type: "c", value: 67 },
+            { x: 50, y: 70, type: "a", value: 25 },
+            { x: 60, y: 30, type: "b", value: 96 },
+            { x: 70, y: 70, type: "a", value: 1 },
+            { x: 70, y: 90, type: "b", value: 46 },
+        ]
+    )
+
+    //define color style: from 
+    const colorStyle = new gridviz.ShapeColorSizeStyle({
+        color: (cell) => "rgb(100,100," + Math.floor(255 * cell.value / 70) + ")"
+    })
+
+    //define stroke style
+    const strokeStyle = new gridviz.StrokeStyle({
+        strokeWidth: (cell) => cell.type == "b" ? 1 : cell.type == "c" ? 3 : 0.5,
+        strokeColor: () => "black"
+    })
+
+    //define layer
+    const gridLayer = new gridviz.GridLayer(dataset, [colorStyle, strokeStyle])
+
+    //add layer to map
+    map.layers = [gridLayer]
+
+    //
+    map.redraw()
+
+</script>

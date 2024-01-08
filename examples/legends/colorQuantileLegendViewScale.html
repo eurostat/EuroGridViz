@@ -1,0 +1,42 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 3000 })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/'),
+        { preprocess: cell => +cell.TOT_P_2021 > 0 }
+    )
+
+    //define style
+    const classNumber = 8
+    const colors = d3.schemeYlOrRd[classNumber]
+    const style = new gridviz.ShapeColorSizeStyle({
+        color: (c, r, z, viewScale) => viewScale(c.TOT_P_2021),
+        viewScale: gridviz.viewScaleColorQuantile({ valueFunction: (c) => +c.TOT_P_2021, classNumber: classNumber, colors: colors }),
+    })
+
+    //define legend
+    const legend = new gridviz.ColorDiscreteLegend({
+        title: "Population",
+        width: 450,
+        colors: () => colors,
+        breaks: (viewScale) => viewScale.breaks.map(b => Math.round(b)),
+    })
+
+    //link legend to style
+    style.legends = [legend]
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style], { minPixelsPerCell: 2 })]
+
+</script>

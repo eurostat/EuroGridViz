@@ -5,7 +5,7 @@ module.exports = {
     mode: 'development',
     output: {
         filename: 'gridviz.js',
-        library: 'gviz',
+        library: 'gridviz',
         libraryTarget: 'umd',
     },
     plugins: [new LiveReloadPlugin()],

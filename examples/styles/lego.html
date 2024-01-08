@@ -12,20 +12,20 @@
         <script>
             let containerDiv = document.getElementById('viz-container')
 
-            new gviz.App(containerDiv)
+            new gridviz.Map(containerDiv)
                 .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(2000)
+                .setZoom(2000)
                 .addMultiScaleTiledGridLayer(
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
                         'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
                         r +
                         'm/',
-                    gviz.LegoStyle.get('TOT_P_2021', {
-                        tFun: (v, r, s, zf) => gviz.sExpRev((v - s.min) / (s.max - s.min), -7),
+                    gridviz.LegoStyle.get('TOT_P_2021', {
+                        tFun: (v, r, s, z) => gridviz.sExpRev((v - s.min) / (s.max - s.min), -7),
                     }),
                     {
-                        pixNb: 10,
+                        minPixelsPerCell: 10,
                         cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
                     }
                 )

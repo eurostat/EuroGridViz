@@ -1,0 +1,54 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2960000, z: 200 })
+        .addZoomButtons()
+
+    //define multi resolution dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/elevation/' + resolution + 'm/')
+    )
+
+    //define style
+    const scale = gridviz.exponentialScale(-8)
+    const style = new gridviz.SideStyle({
+        color: (side, resolution) => {
+            const z1 = side.c1?.elevation || 0
+            const z2 = side.c2?.elevation || 0
+            const dz = +z2 - +z1
+            const slopeAngle = Math.atan2(dz, resolution)
+            let coeff = slopeAngle * 2 / Math.PI
+            coeff = scale(Math.abs(coeff))
+            coeff = coeff > 1 ? 1 : coeff
+            const col = (dz > 0 && side.or === 'h') || (dz < 0 && side.or === 'v') ? '0,0,0' : '255,255,0'
+            return "rgba(" + col + "," + coeff + ")"
+        },
+        width: (side, r, s, z) => {
+            return r
+            //return r * 0.4
+            /*const max = Math.max(Math.abs(s.min), Math.abs(s.max))
+            return (
+                r *
+                (0.01 +
+                    (side.or === 'v' ? 0.6 : 1) *
+                    0.333 *
+                    gridviz.sPow(Math.abs(side.value) / max, 0.3))
+            )*/
+        }
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style], {
+        minPixelsPerCell: 3,
+        cellInfoHTML: (cell) => cell.elevation + ' m',
+    })]
+
+</script>

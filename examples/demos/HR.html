@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+    <head>
+        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
+        <title></title>
+    </head>
+
+    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
+        <div id="viz-container" style="height: 100%; width: 100%"></div>
+
+        <div
+            style="
+                position: absolute;
+                left: 20px;
+                top: 20px;
+                width: auto;
+                height: auto;
+                padding: 10px;
+                border: 0px;
+                border-radius: 5px;
+                background: #ffffffcc;
+                line-height: 1.6;
+                box-shadow: 5px 5px 5px grey;
+            "
+        >
+            <span style="font-size: 1.8em; font-weight: bold">Statistical grids - Croatia</span><br />
+            <span style="font-size: 1.25em">
+                <div id="layer">
+                    <span style="font-size: 1.25em; font-weight: bold">Population</span><br />
+                    <input type="radio" name="layer" id="pop" value="pop" checked />
+                    <label for="pop">Total</label>
+                    <input type="radio" name="layer" id="popSex" value="popSex" />
+                    <label for="popSex">by sex</label>
+                    <input type="radio" name="layer" id="popAge" value="popAge" />
+                    <label for="popAge">by age</label>
+                    <br />
+                    <input type="radio" name="layer" id="popEducation" value="popEducation" />
+                    <label for="popEducation">by education</label>
+                    <input type="radio" name="layer" id="popLabor" value="popLabor" />
+                    <label for="popLabor">by labor status</label>
+                    <input type="radio" name="layer" id="popInact" value="popInact" />
+                    <label for="popInact">inactivity</label>
+                    <br />
+                    <span style="font-size: 1.25em; font-weight: bold">Businesses</span>
+                    <br />
+                    <input type="radio" name="layer" id="busSector" value="busSector" />
+                    <label for="busSector">by sector</label>
+                    <br />
+                    <span style="font-size: 1.25em; font-weight: bold">Tourism</span>
+                    <br />Accomodation: Number of
+                    <input type="radio" name="layer" id="tourAccNb" value="tourAccNb" />
+                    <label for="tourAccNb">estab.</label>
+                    <input type="radio" name="layer" id="tourAccUnits" value="tourAccUnits" />
+                    <label for="tourAccUnits">units</label>
+                    <input type="radio" name="layer" id="tourAccBeds" value="tourAccBeds" />
+                    <label for="tourAccBeds">beds</label>
+                    <br />Tourist origin: by number of
+                    <input type="radio" name="layer" id="tourOriginArr" value="tourOriginArr" />
+                    <label for="tourOriginArr">arrivals</label>
+                    <input type="radio" name="layer" id="tourOriginNights" value="tourOriginNights" />
+                    <label for="tourOriginNights">nights</label>
+                </div>
+                <hr />
+                <input type="checkbox" id="label" checked />
+                <label for="label">City names</label>
+                <input type="checkbox" id="boundary" checked />
+                <label for="boundary">Boundaries</label>
+                <hr />
+                Source: Croatian Bureau of Statistics, 2015,
+                <a
+                    href="https://podaci.dzs.hr/media/selhhzke/metod_74.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >URL</a
+                >
+            </span>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/gridviz@2.1.17"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-format@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+        <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+        <script>
+            let containerDiv = document.getElementById('viz-container')
+            const app = new gviz.App(containerDiv)
+                .setGeoCenter({ x: 4806935, y: 2446234 })
+                .setZoomFactor(400.1)
+                .setZoomFactorExtent([20, 2000])
+                .setLabelLayer(gviz_es.getEuronymeLabelLayer('HR', '20'))
+                .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
+                .setViewFromURL()
+                .addBackgroundLayer({
+                    //url: "https://gisco-services.ec.europa.eu/maps/tiles/GreyEarth/EPSG3035/",
+                    //resolutions: [156543.03392804097, 78271.51696402048, 39135.75848201024, 19567.87924100512, 9783.93962050256, 4891.96981025128, 2445.98490512564],
+                    //origin: [0, 6000000],
+                    //filterColor: (zf) => "#ffffffd3",
+                    url: 'https://raw.githubusercontent.com/jgaffuri/mbxyz/main/pub/elevation_shading/',
+                    resolutions: Array.from({ length: 9 }, (_, i) => 28.00132289714475 * Math.pow(2, 10 - i)),
+                    origin: [0, 6000000],
+                    filterColor: (zf) => '#ffffffc0',
+                })
+
+            //prepare datasets, indexed by thematic domain
+            const ds = {}
+            const override = (c, col) => (c[col] = +c[col])
+
+            //population dataset
+            ds.pop = app.makeMultiScaleTiledGridDataset(
+                [1000, 2000, 3000, 5000, 7000, 10000, 15000, 25000, 40000, 100000],
+                (r) =>
+                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/croatia/Population_2011/' +
+                    r +
+                    'm/',
+
+                {
+                    preprocess: (c) => {
+                        override(c, 'TOTAL')
+                        c.DIFF_MEN_WOMEN = +c.MEN - c.WOMEN
+                        c.DIFF_MEN_WOMEN = (100 * c.DIFF_MEN_WOMEN) / c.TOTAL
+                        if (isNaN(c.DIFF_MEN_WOMEN)) c.DIFF_MEN_WOMEN = 0
+
+                        //education
+                        override(c, 'BASIC_EDUCATION_OR_LESS')
+                        override(c, 'UPPER_SECONDARY_EDUCATION')
+                        override(c, 'TERTIARY_EDUCATION')
+                        c.OTHER_EDUC =
+                            c.TOTAL -
+                            c.BASIC_EDUCATION_OR_LESS -
+                            c.UPPER_SECONDARY_EDUCATION -
+                            c.TERTIARY_EDUCATION
+
+                        //labor
+                        override(c, 'INACTIVE_POPULATION')
+                        override(c, 'LABOUR_FORCE')
+                        c.OTHER_LABOR = c.TOTAL - c.INACTIVE_POPULATION - c.LABOUR_FORCE
+                        //console.log(c.INACTIVE_POPULATION > c.LABOUR_FORCE)  // true and false
+                        //console.log(c.OTHER_LABOR > 0) // true and false
+                        //console.log(c.LABOUR_FORCE/c.INACTIVE_POPULATION <1)  // true and false
+                        c.INACT_RATE = (100 * c.INACTIVE_POPULATION) / c.TOTAL
+                        if (isNaN(c.INACT_RATE)) c.INACT_RATE = 0
+                        //console.log(c.INACT_RATE)
+                    },
+                }
+            )
+
+            //business dataset
+            ds.bus = app.makeMultiScaleTiledGridDataset(
+                [1000, 2000, 3000, 5000, 7000, 10000, 15000, 25000, 40000, 100000],
+                (r) =>
+                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/croatia/Active_business_entities_2016/' +
+                    r +
+                    'm/',
+                {
+                    preprocess: (c) => {
+                        //TOTAL,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T
+                        //see https://nacev2.com/fr
+                        let sum = 0
+                        for (let s of [
+                            'TOTAL',
+                            'A',
+                            'B',
+                            'C',
+                            'D',
+                            'E',
+                            'F',
+                            'G',
+                            'H',
+                            'I',
+                            'J',
+                            'K',
+                            'L',
+                            'M',
+                            'N',
+                            'O',
+                            'P',
+                            'Q',
+                            'R',
+                            'S',
+                            'T',
+                        ]) {
+                            c[s] = +c[s]
+                            if (s != 'TOTAL') sum += c[s]
+                            if (isNaN(c[s])) console.error(c)
+                        }
+                        if (c.TOTAL != sum) console.error(c, c.TOTAL, sum)
+
+                        //sum by sector
+                        c.s1 = c.A
+                        c.s2 = c.B + c.C + c.D + c.E + c.F + c.G + c.H
+                        c.s3 = c.I + c.J + c.K + c.L + c.M + c.N + c.O + c.P + c.Q + c.R + c.S + c.T
+                        //console.log(c.s1, c.s2, c.s3)
+                        //console.log(c.s1 + c.s2 + c.s3 == c.TOTAL)
+                    },
+                }
+            )
+
+            //tourism dataset
+            ds.tou = app.makeMultiScaleTiledGridDataset(
+                [1000, 2000, 3000, 5000, 7000, 10000, 15000, 25000, 40000, 100000],
+                (r) =>
+                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/croatia/Tourism_2017/' +
+                    r +
+                    'm/',
+                {
+                    preprocess: (c) => {
+                        for (let s of [
+                            'ESTABLISHMENTS - TOTAL',
+                            'ACCOMMODATION UNITS (ROOMS APARTMENTS CAMPING SITES) - TOTAL',
+                            'NUMBER OF PERMANENT BEDS',
+                        ])
+                            override(c, s)
+                        for (let s of ['TOTAL ARRIVALS', 'TOTAL NIGHTS']) override(c, s)
+                        for (let p of ['A', 'N']) {
+                            override(c, p + '_DOMESTIC TOURISTS - TOTAL')
+                            override(c, p + '_FOREIGN TOURISTS - TOTAL')
+                            for (let nat of ['AUSTRIAN', 'GERMAN', 'ITALIAN', 'SLOVENIAN'])
+                                override(c, p + '_' + nat + ' TOURISTS')
+                        }
+
+                        for (let p of ['A', 'N'])
+                            c[p + '_OTHER'] =
+                                +c[p + '_FOREIGN TOURISTS - TOTAL'] -
+                                c[p + '_AUSTRIAN TOURISTS'] -
+                                c[p + '_GERMAN TOURISTS'] -
+                                c[p + '_ITALIAN TOURISTS'] -
+                                c[p + '_SLOVENIAN TOURISTS']
+                    },
+                }
+            )
+
+            //
+            const update = () => {
+                //read GUI selection
+                const layCode = document.querySelector('input[name="layer"]:checked').value
+
+                //remove layers
+                app.layers = []
+
+                const col = d3.interpolateSpectral
+                const col2 = d3.schemeCategory10
+                const sStroke = new gviz.StrokeStyle({ maxZoom: 100 })
+
+                if (layCode === 'pop') {
+                    app.addLayerFromDataset(
+                        ds.pop,
+                        [
+                            new gviz.SquareColorWGLStyle({
+                                colorCol: 'TOTAL',
+                                color: d3.interpolateOrRd,
+                                stretching: { fun: 'expRev', alpha: -7 },
+                            }),
+                            new gviz.SideStyle({
+                                valueCol: 'TOTAL',
+                                value: (v1, v2) => {
+                                    return (v2 != undefined ? +v2 : 0) - (v1 != undefined ? +v1 : 0)
+                                },
+                                color: (side, r, s, z) =>
+                                    (side.value > 0 && side.or === 'h') || (side.value < 0 && side.or === 'v')
+                                        ? 'black'
+                                        : 'white',
+                                width: (side, r, s, z) => {
+                                    const max = Math.max(Math.abs(s.min), Math.abs(s.max))
+                                    return (
+                                        r *
+                                        (0.02 +
+                                            0.2 *
+                                                (side.or === 'v' ? 0.6 : 1) *
+                                                gviz.sPow(Math.abs(side.value) / max, 0.5))
+                                    )
+                                },
+                            }),
+                        ],
+                        {
+                            pixNb: 3,
+                            cellInfoHTML: (c) => '<b>' + c.TOTAL + '</b> inhabitants',
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: 'Number of inhabitants',
+                            ticks: 5,
+                            colorRamp: d3.interpolateOrRd,
+                            fun: (t, r, s) => s.max * gviz.sExpRevInverse(t, -7),
+                        })
+                    )
+                } else if (layCode === 'popSex') {
+                    app.addLayerFromDataset(
+                        ds.pop,
+                        [
+                            new gviz.ShapeColorSizeStyle({
+                                colorCol: 'DIFF_MEN_WOMEN',
+                                color: (v, r, s) => {
+                                    const max = Math.max(Math.abs(s.min), Math.abs(s.max))
+                                    const t = (Math.sign(v) * gviz.sPow(Math.abs(v) / max, 0.2)) / 2 + 0.5
+                                    return d3.interpolateSpectral(1 - t)
+                                },
+                                shape: () => 'circle',
+                                sizeCol: 'TOTAL',
+                                size: (v, r, s, zf) => 1.3 * r * gviz.sPow(v / s.max, 0.2),
+                            }),
+                        ],
+                        {
+                            pixNb: 8,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c.TOTAL +
+                                    '</b> inhabitants<br>' +
+                                    c.MEN +
+                                    ' men<br>' +
+                                    c.WOMEN +
+                                    ' women<br>Difference: <b>' +
+                                    (c.DIFF_MEN_WOMEN > 0 ? '+' : '') +
+                                    d3.format('.1f')(c.DIFF_MEN_WOMEN) +
+                                    ' % men</b>'
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({ shape: 'circle', labelUnitText: 'inhab.', fillColor: '#ccc' })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: 'Men / women difference (%)',
+                            ticks: 7,
+                            tickFormat: '.1f',
+                            colorRamp: d3.interpolateSpectral,
+                            invert: true,
+                            fun: (t, r, s) => {
+                                const max = Math.max(Math.abs(s.min), Math.abs(s.max))
+                                return (t < 0.5 ? -1 : 1) * max * gviz.sPow(Math.abs(2 * t - 1), 1 / 0.2)
+                            },
+                        })
+                    )
+                } else if (layCode === 'popAge') {
+                    app.addLayerFromDataset(
+                        ds.pop,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    TOTAL_0_14: col(0.2),
+                                    TOTAL_15_64: col(0.4),
+                                    TOTAL_65p: col(0.9),
+                                },
+                                type: () => 'agepyramid',
+                                sizeCol: 'TOTAL',
+                                size: (v, r, s, zf) => r * gviz.sPow(v / s.max, 0.1, 0),
+                                agePyramidHeight: (c, r) => 0.95 * r,
+                            }),
+                        ],
+                        {
+                            pixNb: 15,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c.TOTAL +
+                                    '</b> inhabitants<br>' +
+                                    ' >65 : ' +
+                                    c.TOTAL_65p +
+                                    '<br>' +
+                                    '15-64: ' +
+                                    c.TOTAL_15_64 +
+                                    '<br>' +
+                                    ' <15 : ' +
+                                    c.TOTAL_0_14
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Age group',
+                            colCat: [
+                                [col(0.2), '<= 14'],
+                                [col(0.4), '15 to 64'],
+                                [col(0.9), ' > 65'],
+                            ].reverse(),
+                        })
+                    )
+                } else if (layCode === 'popEducation') {
+                    app.addLayerFromDataset(
+                        ds.pop,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    OTHER_EDUC: 'gray',
+                                    TERTIARY_EDUCATION: col(0.9),
+                                    UPPER_SECONDARY_EDUCATION: col(0.4),
+                                    BASIC_EDUCATION_OR_LESS: col(0.2),
+                                },
+                                type: () => 'ring',
+                                sizeCol: 'TOTAL',
+                                size: (v, r, s, zf) => r * gviz.sPow(v / s.max, 0.1, 0),
+                                agePyramidHeight: (c, r) => 0.95 * r,
+                            }),
+                        ],
+                        {
+                            pixNb: 15,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c.TOTAL +
+                                    '</b> inhabitants<br>' +
+                                    'Basic or less: ' +
+                                    c.BASIC_EDUCATION_OR_LESS +
+                                    '<br>' +
+                                    'Secondary: ' +
+                                    c.UPPER_SECONDARY_EDUCATION +
+                                    '<br>' +
+                                    'Tertiary: ' +
+                                    c.TERTIARY_EDUCATION +
+                                    '<br>' +
+                                    'Other: ' +
+                                    c.OTHER_EDUC
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({ shape: 'circle', labelUnitText: 'inhab.', fillColor: '#ccc' })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Education level',
+                            colCat: [
+                                [col(0.2), 'basic or less'],
+                                [col(0.4), 'secondary'],
+                                [col(0.9), 'tertiary'],
+                                ['gray', 'other'],
+                            ],
+                        })
+                    )
+                } else if (layCode === 'popLabor') {
+                    app.addLayerFromDataset(
+                        ds.pop,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    OTHER_LABOR: 'gray',
+                                    LABOUR_FORCE: col(0.2),
+                                    INACTIVE_POPULATION: col(0.9),
+                                },
+                                type: () => 'flag',
+                                sizeCol: 'TOTAL',
+                                size: (v, r, s, zf) => r * gviz.sPow(v / s.max, 0.1, 0),
+                                stripesOrientation: () => 90,
+                            }),
+                        ],
+                        {
+                            pixNb: 15,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c.TOTAL +
+                                    '</b> inhabitants<br>' +
+                                    'Labour force: ' +
+                                    c.LABOUR_FORCE +
+                                    '<br>' +
+                                    'Inactive population: ' +
+                                    c.INACTIVE_POPULATION +
+                                    '<br>' +
+                                    'Other: ' +
+                                    c.OTHER_LABOR
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({ shape: 'square', labelUnitText: 'inhab.', fillColor: '#ccc' })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Labor status',
+                            colCat: [
+                                [col(0.9), 'labour force'],
+                                [col(0.2), 'inactive'],
+                                ['gray', 'other'],
+                            ],
+                        })
+                    )
+                } else if (layCode === 'popInact') {
+                    app.addLayerFromDataset(
+                        ds.pop,
+                        [
+                            new gviz.SquareColorWGLStyle({
+                                colorCol: 'INACT_RATE',
+                                color: d3.interpolateOrRd,
+                            }),
+                            sStroke,
+                        ],
+                        {
+                            pixNb: 2,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c.TOTAL +
+                                    '</b> inhabitants<br>' +
+                                    'Inactivity rate: ' +
+                                    d3.format('.1f')(c.INACT_RATE) +
+                                    ' %<br>'
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: 'Inactivity rate (%)',
+                            ticks: 6,
+                            colorRamp: d3.interpolateOrRd,
+                            fun: (t, r, s) => s.max * t,
+                        })
+                    )
+                } else if (layCode === 'busSector') {
+                    app.addLayerFromDataset(
+                        ds.bus,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    s1: '#1b9e77',
+                                    s2: '#d95f02',
+                                    s3: '#7570b3',
+                                },
+                                type: () => 'piechart',
+                                sizeCol: 'TOTAL',
+                                size: (v, r, s, zf) => 1.25 * r * gviz.sPow(v / s.max, 0.1),
+                            }),
+                        ],
+                        {
+                            pixNb: 15,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c.TOTAL +
+                                    '</b> businesses<br>' +
+                                    'Primary sector: ' +
+                                    c.s1 +
+                                    '<br>' +
+                                    'Secondary sector: ' +
+                                    c.s2 +
+                                    '<br>' +
+                                    'Tertiary sector: ' +
+                                    c.s3
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({
+                            shape: 'circle',
+                            labelUnitText: 'businesses',
+                            fillColor: '#ccc',
+                        })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Sector',
+                            colCat: [
+                                ['#1b9e77', 'Primary'],
+                                ['#d95f02', 'Secondary'],
+                                ['#7570b3', 'Tertiary'],
+                            ].reverse(),
+                        })
+                    )
+                } else if (layCode === 'tourAccNb') {
+                    app.addLayerFromDataset(
+                        ds.tou,
+                        [
+                            new gviz.SquareColorWGLStyle({
+                                colorCol: 'ESTABLISHMENTS - TOTAL',
+                                color: d3.interpolateOrRd,
+                                stretching: { fun: 'pow', alpha: 0.2 },
+                            }),
+                            sStroke,
+                        ],
+                        {
+                            pixNb: 2,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                c['ESTABLISHMENTS - TOTAL'] +
+                                '</b> touristic accomodation establishments',
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: 'Tourism - number of establishments',
+                            ticks: 5,
+                            colorRamp: d3.interpolateOrRd,
+                            fun: (t, r, s) => s.max * gviz.sPowInverse(t, 0.2),
+                        })
+                    )
+                } else if (layCode === 'tourAccUnits') {
+                    app.addLayerFromDataset(
+                        ds.tou,
+                        [
+                            new gviz.SquareColorWGLStyle({
+                                colorCol: 'ACCOMMODATION UNITS (ROOMS APARTMENTS CAMPING SITES) - TOTAL',
+                                color: d3.interpolateOrRd,
+                                stretching: { fun: 'pow', alpha: 0.2 },
+                            }),
+                            sStroke,
+                        ],
+                        {
+                            pixNb: 2,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                c['ACCOMMODATION UNITS (ROOMS APARTMENTS CAMPING SITES) - TOTAL'] +
+                                '</b> touristic accomodation units (rooms, appartements, camping sites)',
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: 'Tourism - number of units',
+                            ticks: 5,
+                            colorRamp: d3.interpolateOrRd,
+                            fun: (t, r, s) => s.max * gviz.sPowInverse(t, 0.2),
+                        })
+                    )
+                } else if (layCode === 'tourAccBeds') {
+                    app.addLayerFromDataset(
+                        ds.tou,
+                        [
+                            new gviz.SquareColorWGLStyle({
+                                colorCol: 'NUMBER OF PERMANENT BEDS',
+                                color: d3.interpolateOrRd,
+                                stretching: { fun: 'pow', alpha: 0.2 },
+                            }),
+                            sStroke,
+                        ],
+                        {
+                            pixNb: 2,
+                            cellInfoHTML: (c) =>
+                                '<b>' +
+                                c['NUMBER OF PERMANENT BEDS'] +
+                                '</b> touristic accomodation permanent beds',
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorLegend({
+                            title: 'Tourism - number of beds',
+                            ticks: 5,
+                            colorRamp: d3.interpolateOrRd,
+                            fun: (t, r, s) => s.max * gviz.sPowInverse(t, 0.2),
+                        })
+                    )
+                } else if (layCode === 'tourOriginArr') {
+                    app.addLayerFromDataset(
+                        ds.tou,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    'A_DOMESTIC TOURISTS - TOTAL': col2[0],
+                                    'A_AUSTRIAN TOURISTS': col2[1],
+                                    'A_GERMAN TOURISTS': col2[2],
+                                    'A_ITALIAN TOURISTS': col2[3],
+                                    'A_SLOVENIAN TOURISTS': col2[4],
+                                    A_OTHER: '#bbb',
+                                },
+                                type: () => 'piechart',
+                                sizeCol: 'TOTAL ARRIVALS',
+                                size: (v, r, s, zf) => 1.2 * r * gviz.sPow(v / s.max, 0.1),
+                            }),
+                        ],
+                        {
+                            pixNb: 15,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c['TOTAL ARRIVALS'] +
+                                    '</b> tourist arrivals<br>' +
+                                    c['A_DOMESTIC TOURISTS - TOTAL'] +
+                                    ' croatians<br>' +
+                                    +c['A_AUSTRIAN TOURISTS'] +
+                                    ' austrians<br>' +
+                                    +c['A_GERMAN TOURISTS'] +
+                                    ' germans<br>' +
+                                    +c['A_ITALIAN TOURISTS'] +
+                                    ' italians<br>' +
+                                    +c['A_SLOVENIAN TOURISTS'] +
+                                    ' slovenians<br>' +
+                                    +c['A_OTHER'] +
+                                    ' other countries'
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({ shape: 'circle', labelUnitText: 'arrivals', fillColor: '#ccc' })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Tourist origin',
+                            colCat: [
+                                [col2[0], 'Croatian'],
+                                [col2[1], 'Austrian'],
+                                [col2[2], 'German'],
+                                [col2[3], 'Italian'],
+                                [col2[4], 'Slovenian'],
+                                ['#bbb', 'Other'],
+                            ],
+                        })
+                    )
+                } else if (layCode === 'tourOriginNights') {
+                    app.addLayerFromDataset(
+                        ds.tou,
+                        [
+                            new gviz.CompositionStyle({
+                                color: {
+                                    'N_DOMESTIC TOURISTS - TOTAL': col2[0],
+                                    'N_AUSTRIAN TOURISTS': col2[1],
+                                    'N_GERMAN TOURISTS': col2[2],
+                                    'N_ITALIAN TOURISTS': col2[3],
+                                    'N_SLOVENIAN TOURISTS': col2[4],
+                                    N_OTHER: '#bbb',
+                                },
+                                type: () => 'piechart',
+                                sizeCol: 'TOTAL NIGHTS',
+                                size: (v, r, s, zf) => 1.2 * r * gviz.sPow(v / s.max, 0.1),
+                            }),
+                        ],
+                        {
+                            pixNb: 15,
+                            cellInfoHTML: (c) => {
+                                return (
+                                    '<b>' +
+                                    c['TOTAL NIGHTS'] +
+                                    '</b> tourist nights<br>' +
+                                    c['N_DOMESTIC TOURISTS - TOTAL'] +
+                                    ' croatians<br>' +
+                                    +c['N_AUSTRIAN TOURISTS'] +
+                                    ' austrians<br>' +
+                                    +c['N_GERMAN TOURISTS'] +
+                                    ' germans<br>' +
+                                    +c['N_ITALIAN TOURISTS'] +
+                                    ' italians<br>' +
+                                    +c['N_SLOVENIAN TOURISTS'] +
+                                    ' slovenians<br>' +
+                                    +c['N_OTHER'] +
+                                    ' other countries'
+                                )
+                            },
+                        }
+                    )
+                    //legend
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.SizeLegend({ shape: 'circle', labelUnitText: 'nights', fillColor: '#ccc' })
+                    )
+                    app.layers[0].styles[0].legends.push(
+                        new gviz.ColorCategoryLegend({
+                            title: 'Tourist origin',
+                            colCat: [
+                                [col2[0], 'Croatian'],
+                                [col2[1], 'Austrian'],
+                                [col2[2], 'German'],
+                                [col2[3], 'Italian'],
+                                [col2[4], 'Slovenian'],
+                                ['#bbb', 'Other'],
+                            ],
+                        })
+                    )
+                } else {
+                    console.log('Unexpected layer code: ' + layCode)
+                    return
+                }
+
+                //redraw
+                app.cg.redraw()
+            }
+
+            //layer selector
+            document.querySelector('#layer').addEventListener('change', update)
+
+            // show/hide labels
+            document.querySelector('#label').addEventListener('change', function () {
+                app.showLabels = this.checked
+                app.cg.redraw()
+            })
+
+            // show/hide boundaries
+            document.querySelector('#boundary').addEventListener('change', function () {
+                app.showBoundaries = this.checked
+                app.cg.redraw()
+            })
+
+            //select layer from URL
+            const ls = gviz.getParameterByName('lay')
+            if (ls) {
+                const b = document.querySelector('#' + ls)
+                if (b) b.checked = true
+            }
+
+            //initialise
+            update()
+        </script>
+
+        <div
+            style="
+                position: absolute;
+                right: 0px;
+                bottom: 0px;
+                width: auto;
+                height: auto;
+                padding: 1px;
+                border: 0px;
+                background: #ffffffcc;
+            "
+        >
+            <span style="font-size: 0.8em"
+                ><a href="https://github.com/eurostat/gridviz" style="text-decoration: none">GridViz</a> | ©
+                <a href="https://eurogeographics.org" style="text-decoration: none">EuroGeographics</a></span
+            >
+        </div>
+    </body>
+</html>

@@ -1,13 +1,13 @@
 //@ts-check
 'use strict'
 
-import { Legend } from '../Legend.js'
-import { format } from 'd3-format'
+import { Legend } from '../core/Legend.js'
 
 /**
  * A legend element for continuous color style.
  * Inspiration: https://observablehq.com/@d3/color-legend
  *
+ * @module legend
  * @author Joseph Davies, Julien Gaffuri
  */
 export class ColorLegend extends Legend {
@@ -16,58 +16,47 @@ export class ColorLegend extends Legend {
         super(opts)
         opts = opts || {}
 
-        this.colorRamp = opts.colorRamp
+        //a function [0,1]->color for continuous colors
+        //or array of colors for discrete colors
+        this.colorScale = opts.colorScale
 
-        //function (t[0,1], r, s) -> v (for label text)
-        this.fun = opts.fun
+        //function (t[0,1]) -> value (for label text)
+        this.textScale = opts.textScale || (t => t)
 
-        this.title = opts.title
-        this.tickSize = opts.tickSize || 6
-        this.width = opts.width || 300
-        this.height = opts.height || 15
         this.margin = opts.margin || 5
+
+        //replace with labels ?
+        this.tickSize = opts.tickSize || 6
         this.ticks = opts.ticks || Math.floor(this.width / 50)
-        this.tickFormat = opts.tickFormat || ',.0f'
+        this.tickFormat = opts.tickFormat
         this.tickUnit = opts.tickUnit
 
         this.fontSize = opts.fontSize || '0.8em'
         this.invert = opts.invert
 
-        //to be used as opts => opts.sAlpha to show legend on alpha channel
-        this.getStats = opts.getStats || (opts => opts.sColor)
+        this.width = opts.width || 300
+        this.height = opts.height || 15
     }
 
     /**
-     * @param {{ style: import("../Style").Style, r: number, zf: number, sSize: import("../Style").Stat, sColor: import("../Style").Stat, sAlpha: import("../Style").Stat }} opts
+     * @param {{viewScale:import('../core/Style').ViewScale} } opts
      */
     update(opts) {
-        //could happen when data is still loading
-        if (!opts.sColor) return
 
         //clear
         this.div.selectAll('*').remove()
 
-        const titleHeight = 12
+        //title
+        this.makeTitle()
 
         const svgW = this.width + 2 * this.margin
-        const svgH = this.height + 3 * this.margin + titleHeight + this.tickSize + 10
+        const svgH = this.height + this.margin + this.tickSize + 10
         const svg = this.div.append('svg').attr('width', svgW).attr('height', svgH)
         //  <rect width="300" height="100" style="fill:rgb(0,0,255);stroke-width:3;stroke:rgb(0,0,0)" />
 
-        //title
-        svg.append('text')
-            .attr('x', this.margin)
-            .attr('y', this.margin)
-            .style('font-size', '0.8em')
-            .style('font-weight', 'bold')
-            .style('alignment-baseline', 'top')
-            .style('dominant-baseline', 'hanging')
-            .style('pointer-events', 'none')
-            .text(this.title)
-
         const g = svg
             .append('g')
-            .attr('transform', 'translate(' + this.margin + ' ' + (2 * this.margin + titleHeight) + ')')
+            .attr('transform', 'translate(' + this.margin + ' ' + 0 + ')')
 
         //draw color bar
         const w = this.width,
@@ -81,7 +70,7 @@ export class ColorLegend extends Legend {
                 .attr('y', 0)
                 .attr('width', step)
                 .attr('height', h)
-                .style('fill', this.colorRamp(t))
+                .style('fill', this.colorScale(t, opts.viewScale))
         }
 
         for (let i = 0; i < this.ticks; i++) {
@@ -113,13 +102,13 @@ export class ColorLegend extends Legend {
         //update tick labels
 
         //label text format
-        const f = this.tickFormat && this.tickFormat != 'text' ? format(this.tickFormat) : (v) => v
-        const stat = this.getStats(opts)
+        const f = this.tickFormat && this.tickFormat != 'text' ? this.tickFormat : (v) => v
         for (let i = 0; i < this.ticks; i++) {
             let t = i / (this.ticks - 1)
 
-            const v = this.fun(t, opts.r, stat)
+            const v = this.textScale(t, opts.viewScale)
             const text = (v ? f(v) : '0') + (this.tickUnit ? this.tickUnit : '')
+            if (text == undefined) continue
 
             //tick label
             this.div.select('#' + 'ticklabel_' + i).text(text)

@@ -1,0 +1,38 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4300000, y: 2900000, z: 300 })
+
+    //define dataset
+    const dataset = new gridviz.CSVGrid(map, "https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Europe/pop_2018_10km.csv", 10000)
+        .addZoomButtons()
+
+    //define color for each cell c
+    const colorFunction = (cell) => {
+        if (cell.population > 150000) return "#993404"
+        else if (cell.population > 60000) return "#d95f0e"
+        else if (cell.population > 20000) return "#fe9929"
+        else if (cell.population > 6000) return "#fec44f"
+        else if (cell.population > 1500) return "#fee391"
+        else return "#ffffd4"
+    }
+
+    //define style
+    const style = new gridviz.ShapeColorSizeStyle({
+        color: colorFunction,
+        alpha: (z) => z < 70 ? 0.75 : 1.0,
+        blendOperation: () => "multiply"
+    })
+
+    //define WMS background layer
+    const backgroundLayer = new gridviz.BackgroundLayerWMS({
+        url: 'https://sgx.geodatenzentrum.de/wms_basemapde?&service=WMS&request=GetMap&layers=de_basemapde_web_raster_grau&styles=&format=image%2Fjpeg&transparent=false&version=1.1.1&srs=EPSG%3A3035'
+    })
+
+    //add layer to map
+    map.layers = [backgroundLayer, new gridviz.GridLayer(dataset, [style])]
+
+</script>

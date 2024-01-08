@@ -69,10 +69,10 @@
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
         <script>
             let containerDiv = document.getElementById('viz-container')
-            const app = new gviz.App(containerDiv)
+            const map = new gridviz.Map(containerDiv)
                 .setGeoCenter({ x: 4313947, y: 2970049 })
-                .setZoomFactor(1500)
-                .setZoomFactorExtent([25, 7500])
+                .setZoom(1500)
+                .setZoomExtent([25, 7500])
                 .setViewFromURL()
 
                 .setLabelLayer(
@@ -101,14 +101,14 @@
                         9783.93962050256, 4891.96981025128, 2445.98490512564,
                     ],
                     origin: [0, 6000000],
-                    filterColor: (zf) => '#ffffffd3',
+                    filterColor: (z) => '#ffffffd3',
                 })
 
             //prepare datasets
             const ds = {}
 
             //elevation dataset
-            ds.el = app.makeMultiScaleTiledGridDataset(
+            ds.el = map.makeMultiScaleTiledGridDataset(
                 [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
                 (r) =>
                     'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/elevation/' +
@@ -117,14 +117,14 @@
             )
 
             //land cover dataset
-            ds.lc = app.makeMultiScaleTiledGridDataset(
+            ds.lc = map.makeMultiScaleTiledGridDataset(
                 [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
                 (r) =>
                     'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/clc/' + r + 'm/'
             )
 
             //population
-            ds.pop = app.makeMultiScaleTiledGridDataset(
+            ds.pop = map.makeMultiScaleTiledGridDataset(
                 [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                 (r) =>
                     'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
@@ -144,7 +144,7 @@
                 const layCode = document.querySelector('input[name="layer"]:checked').value
 
                 //remove layers
-                app.layers = []
+                map.layers = []
 
                 //elevation
                 if (layCode === 'el') {
@@ -159,25 +159,25 @@
                     ])
                     for (let t = 0; t <= 1; t += 1 / 10) colors.push(colFun(t))
 
-                    app.addLayerFromDataset(
+                    map.addLayer(
                         ds.el,
-                        gviz.LegoStyle.get('elevation', {
+                        gridviz.LegoStyle.get('elevation', {
                             colors: colors,
-                            tFun: (v, r, s, zf) => gviz.sPow((Math.max(v, 0) - s.min) / (s.max - s.min), 0.6),
+                            tFun: (v, r, s, z) => gridviz.sPow((Math.max(v, 0) - s.min) / (s.max - s.min), 0.6),
                         }),
                         {
-                            pixNb: 10,
+                            minPixelsPerCell: 10,
                             cellInfoHTML: (c) => '<b>' + c.elevation + '</b> m',
                         }
                     )
 
                     //legend
-                    app.layers[0].styles[0].legends.push(
-                        new gviz.ColorLegend({
+                    map.layers[0].styles[0].legends.push(
+                        new gridviz.ColorLegend({
                             title: 'Elevation (m)',
                             ticks: 5,
                             colorRamp: colFun,
-                            fun: (t, r, s) => s.min + (s.max - s.min) * gviz.sPowInverse(t, 0.6),
+                            fun: (t, r, s) => s.min + (s.max - s.min) * gridviz.sPowInverse(t, 0.6),
                             width: 300,
                         })
                     )
@@ -280,41 +280,41 @@
                         48: 'No data',
                     }
 
-                    app.addLayerFromDataset(
+                    map.addLayer(
                         ds.lc,
-                        gviz.LegoStyle.getCat('clc', {
+                        gridviz.LegoStyle.getCat('clc', {
                             color: clcColors,
                         }),
                         {
-                            pixNb: 10,
+                            minPixelsPerCell: 10,
                             cellInfoHTML: (c) => clcLabels[c.clc],
                         }
                     )
                 } else if (layCode === 'pop') {
                     //population
 
-                    app.addLayerFromDataset(
+                    map.addLayer(
                         ds.pop,
-                        gviz.LegoStyle.get('TOT_P_2021', {
+                        gridviz.LegoStyle.get('TOT_P_2021', {
                             color: d3.interpolateOrRd,
                             nb: 15,
-                            tFun: (v, r, s) => gviz.sExpRev((v - s.min) / (s.max - s.min), -7),
+                            tFun: (v, r, s) => gridviz.sExpRev((v - s.min) / (s.max - s.min), -7),
                             widthFactor: 0.04,
                         }),
                         {
-                            pixNb: 10,
+                            minPixelsPerCell: 10,
                             cellInfoHTML: (c) =>
                                 +c.TOT_P_2021 ? '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)' : undefined,
                         }
                     )
 
                     //legend
-                    app.layers[0].styles[0].legends.push(
-                        new gviz.ColorLegend({
+                    map.layers[0].styles[0].legends.push(
+                        new gridviz.ColorLegend({
                             title: 'Number of inhabitants',
                             ticks: 5,
                             colorRamp: d3.interpolateOrRd,
-                            fun: (t, r, s) => s.max * gviz.sExpRevInverse(t, -7),
+                            fun: (t, r, s) => s.max * gridviz.sExpRevInverse(t, -7),
                             width: 500,
                         })
                     )
@@ -324,7 +324,7 @@
                 }
 
                 //redraw
-                app.cg.redraw()
+                map.cg.redraw()
             }
 
             //layer selector
@@ -332,18 +332,18 @@
 
             // show/hide labels
             document.querySelector('#label').addEventListener('change', function () {
-                app.showLabels = this.checked
-                app.cg.redraw()
+                map.showLabels = this.checked
+                map.cg.redraw()
             })
 
             // show/hide boundaries
             document.querySelector('#boundary').addEventListener('change', function () {
-                app.showBoundaries = this.checked
-                app.cg.redraw()
+                map.showBoundaries = this.checked
+                map.cg.redraw()
             })
 
             //select layer from URL
-            const ls = gviz.getParameterByName('lay')
+            const ls = gridviz.getParameterByName('lay')
             if (ls) {
                 const b = document.querySelector('#' + ls)
                 if (b) b.checked = true

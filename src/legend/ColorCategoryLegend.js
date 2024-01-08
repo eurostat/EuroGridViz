@@ -1,11 +1,12 @@
 //@ts-check
 'use strict'
 
-import { Legend } from '../Legend.js'
+import { Legend } from '../core/Legend.js'
 
 /**
  * A legend element for color categrories.
  *
+ * @module legend
  * @author Joseph Davies, Julien Gaffuri
  */
 export class ColorCategoryLegend extends Legend {
@@ -17,49 +18,34 @@ export class ColorCategoryLegend extends Legend {
         //col/categories array, in display order
         /**
          * @private
-         * @type {Array.<Array.<string>>} */
-        this.colCat = opts.colCat || [['gray', '-']]
+         * @type {Array.<[string,string]>} */
+        this.colorLabel = opts.colorLabel || [['gray', '-']]
 
         /**
          * @private
-         * @type {import("../Style").Shape} */
+         * @type {import("../core/Style.js").Shape} */
         this.shape = opts.shape || 'circle'
         this.dimension = opts.dimension || { r: 8 }
         this.strokeColor = opts.strokeColor || 'gray'
         this.strokeWidth = opts.strokeWidth || 1
-
-        this.title = opts.title
-        this.titleFontSize = opts.titleFontSize || '0.8em'
-        this.titleFontWeight = opts.titleFontWeight || 'bold'
-
-        //label
-        this.labelFontSize = opts.labelFontSize || '0.8em'
     }
 
     /**
-     * @param {{ style: import("../Style").Style, r: number, zf: number, sSize: import("../Style").Stat, sColor: import("../Style").Stat }} opts
      */
-    update(opts) {
+    update() {
+
         //clear
         this.div.selectAll('*').remove()
 
-        //build
-
         //title
-        if (this.title)
-            this.div
-                .append('div')
-                .style('font-size', this.titleFontSize)
-                .style('font-weight', this.titleFontWeight)
-                .style('margin-bottom', '7px')
-                .text(this.title)
+        this.makeTitle()
 
         //categories
-        const nb = this.colCat.length
+        const nb = this.colorLabel.length
         if (nb == 0) return
 
         for (let i = 0; i < nb; i++) {
-            const cat = this.colCat[i]
+            const cat = this.colorLabel[i]
 
             //make div for category
             const d = this.div.append('div')

@@ -60,20 +60,20 @@
 
             let containerDiv = document.getElementById('viz-container')
 
-            new gviz.App(containerDiv)
+            new gridviz.Map(containerDiv)
                 .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(2000)
+                .setZoom(2000)
                 .addMultiScaleTiledGridLayer(
                     [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
                         'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/clc/' +
                         r +
                         'm/',
-                    gviz.LegoStyle.getCat('clc', {
+                    gridviz.LegoStyle.getCat('clc', {
                         color: clcColors,
                     }),
                     {
-                        pixNb: 10,
+                        minPixelsPerCell: 10,
                     }
                 )
         </script>

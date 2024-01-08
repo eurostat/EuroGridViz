@@ -1,184 +1,103 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
-    <head>
-        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-        <title>Gridviz - Kernel smoothing style</title>
-    </head>
+<div>Style<br /><select id="style">
+        <option value="color" selected>Color - continuous</option>
+        <option value="color_discrete">Color - discrete</option>
+        <option value="size">Circle size - continuous</option>
+        <option value="size_discrete">Circle size - discrete</option>
+    </select>
+    <br />Smoothing<br />
+    <input type="range" min="3" max="30" value="10" class="slider" id="sigma" />
+</div>
+<div id="map" style="height: 500px; width: 800px"></div>
 
-    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-        <div id="viz-container" style="height: 100%; width: 100%"></div>
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridviz-smoothing@2.0.2"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
 
-        <div
-            style="
-                position: absolute;
-                left: 20px;
-                top: 20px;
-                width: auto;
-                height: auto;
-                padding: 10px;
-                border: 0px;
-                border-radius: 5px;
-                background: #ffffffcc;
-                line-height: 1.6;
-                box-shadow: 5px 5px 5px grey;
-            "
-        >
-            <select id="style" style="font-size: 1em">
-                <option value="color" selected>Color - continuous</option>
-                <option value="colord">Color - discrete</option>
-                <option value="size">Circle size</option>
-                <option value="lego">Lego</option>
-                <!-- <option value="side">Shading</option> -->
-            </select>
-            <br />
-            <input type="range" min="3" max="30" value="10" class="slider" id="sigma" />
-        </div>
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 3000 })
+        .addZoomButtons()
 
-        <script src="../../dist/gridviz.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/gridviz-smoothing@1.0.1"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
-        <script>
+    //define multi resolution dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/')
+    )
 
-//TODO: fix bug with joyplot
-            //            <option value="joyplot">Joyplot</option>
+    //define style
+    const smoothingStyle = new gridviz_smoothing.KernelSmoothingStyle({
+        value: (cell) => +cell.TOT_P_2021,
+        filterSmoothed: (value) => value > 0.001,
+    })
 
-            let containerDiv = document.getElementById('viz-container')
-            const app = new gviz.App(containerDiv)
-                .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(1000)
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [smoothingStyle])]
 
-            //add layer with initial kernel smoothing style
-            app.addMultiScaleTiledGridLayer(
-                [1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                (r) =>
-                    'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
-                    r +
-                    'm/',
-                [
-                    new gviz_sm.KernelSmoothingStyle({
-                        value: (c) => +c.TOT_P_2021,
-                        filterSm: (v) => v > 0.001,
-                    }),
-                ],
-                {
-                    pixNb: 10,
-                    cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
-                }
-            )
+    //
+    const update = () => {
 
-            //prepare lego colors
-            const colsLego = d3.schemeRdYlGn[10].reverse()
+        //set sigma
+        const sig = +document.querySelector('#sigma').value
+        smoothingStyle.sigma = (resolution, z) => (resolution * sig) / 10
 
-            //
-            const update = () => {
-                //get smoothing style
-                const s = app.layers[0].styles[0]
+        //set selected style
+        const sty = document.querySelector('#style').value
+        if (sty == 'color') {
+            smoothingStyle.factor = 3
+            const scale = gridviz.exponentialScale(-20)
+            smoothingStyle.styles = [
+                new gridviz.SquareColorWebGLStyle({
+                    color: (t) => d3.interpolateYlOrRd(t), //d3.interpolateCividis, interpolateSpectral
+                    viewScale: (cells) => d3.max(cells, cell => +cell.ksmval),
+                    tFun: (cell, resolution, z, max) => {
+                        const t = scale(cell.ksmval / max)
+                        return t
+                    },
+                }),
+            ]
+        } else if (sty == 'color_discrete') {
+            smoothingStyle.factor = 2
+            smoothingStyle.styles = [
+                new gridviz.ShapeColorSizeStyle({
+                    color: (c, r, z, viewScale) => viewScale(c.ksmval),
+                    viewScale: gridviz.viewScaleColor({ valueFunction: (c) => +c.ksmval, colors: d3.schemeYlOrRd[7], stretching: gridviz.logarithmicScale(-7) }),
+                })
+            ]
+        } else if (sty == 'size') {
+            smoothingStyle.factor = 8
+            smoothingStyle.styles = [
+                new gridviz.ShapeColorSizeStyle({
+                    size: (c, r, z, viewScale) => viewScale(c.ksmval),
+                    viewScale: gridviz.viewScale({ valueFunction: (c) => +c.ksmval, maxSizeFactor: 1.3, minSizePix: 1, stretching: gridviz.logarithmicScale(-7) }),
+                    shape: () => "circle",
+                    color: () => "black"
+                }),
+            ]
+        } else if (sty == 'size_discrete') {
+            smoothingStyle.factor = 8
+            smoothingStyle.styles = [
+                new gridviz.ShapeColorSizeStyle({
+                    size: (c, r, z, viewScale) => viewScale(c.ksmval),
+                    viewScale: gridviz.viewScale({ valueFunction: (c) => +c.ksmval, maxSizeFactor: 1.3, minSizePix: 1, stretching: gridviz.logarithmicScale(-7), classNumber: 7 }),
+                    shape: () => "circle",
+                    color: () => "black"
+                }),
+            ]
+        }
 
-                //set sigma
-                const sig = document.querySelector('#sigma').value
-                s.sigma = (r, zf) => (r * +sig) / 10
+        //redraw
+        map.redraw()
+    }
 
-                //set selected style
-                const sty = document.querySelector('#style').value
-                if (sty == 'color') {
-                    s.factor = 3
-                    s.styles = [
-                        new gviz.SquareColorWGLStyle({
-                            colorCol: 'ksmval',
-                            color: (t) => d3.interpolateSpectral(1 - t), //d3.interpolateCividis,
-                            tFun: (v, r, s) => {
-                                const v_ = gviz.sExp(v / s.max, -20)
-                                return v_
-                            },
-                        }),
-                    ]
-                } else if (sty == 'colord') {
-                    const nbClass = 12
-                    s.factor = 2
-                    s.styles = [
-                        new gviz.SquareColorWGLStyle({
-                            colorCol: 'ksmval',
-                            color: (t) => d3.interpolateSpectral(1 - t),
-                            tFun: (v, r, s) => {
-                                const v_ = gviz.sExp(v / s.max, -20)
-                                const cl = Math.floor(nbClass * v_) / nbClass
-                                return cl
-                            },
-                        }),
-                    ]
-                } else if (sty == 'size') {
-                    s.factor = 8
-                    s.styles = [
-                        new gviz.ShapeColorSizeStyle({
-                            color: () => 'black',
-                            sizeCol: 'ksmval',
-                            size: (v, r, s, zf) => 1.3 * r * Math.pow(v / s.max, 0.3),
-                            shape: () => 'circle',
-                        }),
-                    ]
-                } else if (sty == 'joyplot') {
-                    s.factor = 20
-                    s.styles = [
-                        new gviz.JoyPlotStyle({
-                            heightCol: 'ksmval',
-                            height: (v, r, s, zf) => {
-                                console.log(5 * r * Math.sqrt(v / s.max))
-                                return 5 * r * Math.sqrt(v / s.max)
-                            },
-                        }),
-                    ]
-                } else if (sty == 'lego') {
-                    s.factor = 10
-                    s.styles = gviz.LegoStyle.get('ksmval', {
-                        tFun: (v, r, s, zf) => gviz.sExpRev((v - s.min) / (s.max - s.min), -7),
-                        colors: colsLego,
-                    })
-                } else if (sty == 'side') {
-                    s.factor = 10
-                    s.styles = [
-                        new gviz.SideStyle({
-                            valueCol: 'ksmval',
-                            value: (v1, v2) => {
-                                return (v2 != undefined ? +v2 : 0) - (v1 != undefined ? +v1 : 0)
-                            },
+    //style selection
+    document.getElementById('style').addEventListener('change', update)
 
-                            color: (side, r, s, z) => {
-                                const max = Math.max(Math.abs(s.min), Math.abs(s.max))
-                                const tr = 0.3 * gviz.sPow(Math.abs(side.value) / max, 0.3)
-                                return (side.value > 0 && side.or === 'h') ||
-                                    (side.value < 0 && side.or === 'v')
-                                    ? 'rgba(0,0,0,' + tr + ')'
-                                    : 'rgba(255,255,100,' + tr + ')'
-                            },
-                            width: (side, r, s, z) => {
-                                return r * 1
-                            },
+    //sigma selection
+    document.getElementById('sigma').oninput = update
 
-                            /*
-                        color: (side, r, s, z) => side.value > 0 && side.or === "h" || side.value < 0 && side.or === "v" ? "black" : "white",
-                        width: (side, r, s, z) => {
-                            const max = Math.max(Math.abs(s.min), Math.abs(s.max))
-                            return r * (0.01 + (side.or === "v" ? 0.6 : 1) * 0.333 * gviz.sPow(Math.abs(side.value) / max, 0.3))
-                        },*/
+    update()
 
-                            fillColor: (c) => (c.ksmval < 0 ? '#d13c4b' : '#4288b5'),
-                        }),
-                    ]
-                }
-
-                //redraw
-                app.cg.redraw()
-            }
-
-            //style selection
-            document.getElementById('style').addEventListener('change', update)
-
-            //sigma selection
-            document.getElementById('sigma').oninput = update
-
-            update()
-        </script>
-    </body>
-</html>
+</script>

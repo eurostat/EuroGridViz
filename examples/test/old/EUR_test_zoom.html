@@ -15,21 +15,21 @@
         <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
         <script>
             let containerDiv = document.getElementById('viz-container')
-            const app = new gviz.App(containerDiv)
+            const map = new gridviz.Map(containerDiv)
                 .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(100)
-                .setZoomFactorExtent([50, 11000])
+                .setZoom(100)
+                .setZoomExtent([50, 11000])
                 .setLabelLayer(gviz_es.getEuronymeLabelLayer())
                 .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
 
             //style data
-            const s = new gviz.SquareColorWGLStyle({
+            const s = new gridviz.SquareColorWGLStyle({
                 colorCol: 'TOT_P_2021',
                 color: d3.interpolateOrRd,
             })
 
             const resolutions = [1000, 2000, 5000, 10000, 20000, 50000, 100000]
-            app.addMultiScaleTiledGridLayer(
+            map.addMultiScaleTiledGridLayer(
                 resolutions,
                 (r) =>
                     'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
@@ -56,19 +56,19 @@
         }, 1000);*/
 
             //no move
-            //app.goToStraight(4000000, 2960000, 100, 10, 500);
+            //map.goToStraight(4000000, 2960000, 100, 10, 500);
             //zoom out
-            //app.goToStraight(4000000, 2960000, 500, 10, 100);
+            //map.goToStraight(4000000, 2960000, 500, 10, 100);
             //pan
-            //app.goToStraight(4050000, 2900000, 100, 10, 1);
+            //map.goToStraight(4050000, 2900000, 100, 10, 1);
             //zoom out and pan
-            //app.goToStraight(4050000, 2900000, 200, 10, 100);
+            //map.goToStraight(4050000, 2900000, 200, 10, 100);
 
             /*
-                gviz.zoomTo(app, 1000, 1.05, 0, () => {
-                    gviz.zoomTo(app, 110, 1.05, 0, () => {
-                        gviz.zoomTo(app, 1000, 1.05, 0, () => {
-                            gviz.zoomTo(app, 110, 1.05, 0, () => {
+                gridviz.zoomTo(app, 1000, 1.05, 0, () => {
+                    gridviz.zoomTo(app, 110, 1.05, 0, () => {
+                        gridviz.zoomTo(app, 1000, 1.05, 0, () => {
+                            gridviz.zoomTo(app, 110, 1.05, 0, () => {
         
                             }, 1000)
                         }, 1000)

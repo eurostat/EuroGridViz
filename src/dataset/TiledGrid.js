@@ -1,13 +1,11 @@
 //@ts-check
 'use strict'
 
-/** @typedef {{ dims: object, crs: string, tileSizeCell: number, originPoint: {x:number,y:number}, resolutionGeo: number, tilingBounds:import("../Dataset").Envelope, format:import("../DatasetComponent").Format }} GridInfo */
+/** @typedef {{ dims: object, crs: string, tileSizeCell: number, originPoint: {x:number,y:number}, resolutionGeo: number, tilingBounds:import("../core/GeoCanvas.js").Envelope }} GridInfo */
 
 // internal
-import { GridTile } from './GridTile.js'
-import { App } from '../App.js'
-import { DatasetComponent } from '../DatasetComponent.js'
-import { monitor, monitorDuration } from '../utils/Utils.js'
+import { Dataset } from '../core/Dataset.js'
+//import { monitor, monitorDuration } from '../utils/Utils.js'
 
 // external
 import { json, csv } from 'd3-fetch'
@@ -15,22 +13,17 @@ import { json, csv } from 'd3-fetch'
 /**
  * A tiled dataset, composed of CSV tiles.
  *
+ * @module dataset
  * @author Joseph Davies, Julien Gaffuri
  */
-export class TiledGrid extends DatasetComponent {
+export class TiledGrid extends Dataset {
     /**
+     * @param {import("../core/Map.js").Map} map The map.
      * @param {string} url The URL of the dataset.
-     * @param {App} app The application.
-     * @param {{preprocess?:(function(import("../Dataset").Cell):boolean) }} opts
+     * @param {{preprocess?:(function(import("../core/Dataset.js").Cell):boolean) }} opts
      */
-    constructor(url, app, opts = {}) {
-        super(url, 0, opts)
-
-        /**
-         * The app being used.
-         * @type {App}
-         */
-        this.app = app
+    constructor(map, url, opts = {}) {
+        super(map, url, 0, opts)
 
         /**
          * The grid info object, from the info.json file.
@@ -52,15 +45,15 @@ export class TiledGrid extends DatasetComponent {
          * */
         this.cache = {}
 
+        //launch loading
+        this.loadInfo()
     }
 
     /**
      * Load the info.json from the url.
-     *
-     * @param {function():void} callback
      * @returns this
      */
-    loadInfo(callback) {
+    loadInfo() {
         if (!this.info && this.infoLoadingStatus === 'notLoaded') {
             ; (async () => {
                 try {
@@ -68,14 +61,14 @@ export class TiledGrid extends DatasetComponent {
                     this.info = data
                     this.resolution = data.resolutionGeo
                     this.infoLoadingStatus = 'loaded'
-                    if (callback) callback()
+                    this.map.redraw()
                 } catch (error) {
                     //mark as failed
                     this.infoLoadingStatus = 'failed'
                 }
             })()
-        } else if (callback && (this.infoLoadingStatus === 'loaded' || this.infoLoadingStatus === 'failed'))
-            callback()
+        } else if ((this.infoLoadingStatus === 'loaded' || this.infoLoadingStatus === 'failed'))
+            this.map.redraw()
         return this
     }
 
@@ -83,12 +76,12 @@ export class TiledGrid extends DatasetComponent {
      * Compute a tiling envelope from a geographical envelope.
      * This is the function to use to know which tiles to download for a geographical view.
      *
-     * @param {import("../Dataset").Envelope} e
-     * @returns {import("../Dataset").Envelope|undefined}
+     * @param {import("../core/GeoCanvas.js").Envelope} e
+     * @returns {import("../core/GeoCanvas.js").Envelope|undefined}
      */
     getTilingEnvelope(e) {
         if (!this.info) {
-            this.loadInfo(() => { })
+            this.loadInfo()
             return
         }
 
@@ -107,23 +100,22 @@ export class TiledGrid extends DatasetComponent {
     /**
      * Request data within a geographic envelope.
      *
-     * @param {import("../Dataset").Envelope} extGeo
-     * @param {function():void} redrawFun
+     * @param {import('../core/GeoCanvas.js').Envelope} extGeo
      * @returns {this}
      */
-    getData(extGeo, redrawFun) {
+    getData(extGeo) {
         //TODO empty cache when it gets too big ?
 
         //check if info has been loaded
         if (!this.info) return this
 
         //tiles within the scope
-        /** @type {import("../Dataset").Envelope|undefined} */
+        /** @type {import("../core/GeoCanvas.js").Envelope|undefined} */
         const tb = this.getTilingEnvelope(extGeo)
         if (!tb) return this
 
         //grid bounds
-        /** @type {import("../Dataset").Envelope} */
+        /** @type {import("../core/GeoCanvas.js").Envelope} */
         const gb = this.info.tilingBounds
 
         for (let xT = Math.max(tb.xMin, gb.xMin); xT <= Math.min(tb.xMax, gb.xMax); xT++) {
@@ -132,7 +124,7 @@ export class TiledGrid extends DatasetComponent {
                 if (!this.cache[xT]) this.cache[xT] = {}
 
                 //check if tile exists in the cache
-                /** @type {GridTile} */
+                /** @type {object} */
                 let tile = this.cache[xT][yT]
                 if (tile) continue
 
@@ -140,11 +132,11 @@ export class TiledGrid extends DatasetComponent {
                 this.cache[xT][yT] = "loading";
                 (async () => {
                     //request tile
-                    /** @type {Array.<import("../Dataset").Cell>}  */
+                    /** @type {Array.<import("../core/Dataset.js").Cell>}  */
                     let cells
 
                     try {
-                        /** @type {Array.<import("../Dataset").Cell>}  */
+                        /** @type {Array.<import("../core/Dataset.js").Cell>}  */
                         // @ts-ignore
                         const data = await csv(this.url + xT + '/' + yT + '.csv')
 
@@ -174,23 +166,24 @@ export class TiledGrid extends DatasetComponent {
                         console.error('Tile info inknown')
                         return
                     }
-                    const tile_ = new GridTile(cells, xT, yT, this.info)
+                    const tile_ = getGridTile(cells, xT, yT, this.info)
                     this.cache[xT][yT] = tile_
 
                     //if (monitor) monitorDuration('storage')
 
                     //if no redraw is specified, then leave
-                    if (!redrawFun) return
+                    this.map.redraw()
 
                     //check if redraw is really needed, that is if:
 
                     // 1. the dataset belongs to a layer which is visible at the current zoom level
                     let redraw = false
                     //go through the layers
-                    const zf = this.app.getZoomFactor()
-                    for (const lay of this.app.layers) {
-                        if (!lay.visible) continue
-                        if (lay.getDatasetComponent(zf) != this) continue
+                    const z = this.map.getZoom()
+                    for (const lay of this.map.layers) {
+                        if (lay.visible && !lay.visible(z)) continue
+                        if (!lay.getDataset) continue
+                        if (lay.getDataset(z) != this) continue
                         //found one layer. No need to seek more.
                         redraw = true
                         break
@@ -200,7 +193,7 @@ export class TiledGrid extends DatasetComponent {
                     if (!redraw) return
 
                     // 2. the tile is within the view, that is its geo envelope intersects the viewer geo envelope.
-                    const env = this.app.updateExtentGeo()
+                    const env = this.map.updateExtentGeo()
                     const envT = tile_.extGeo
                     if (env.xMax <= envT.xMin) return
                     if (env.xMin >= envT.xMax) return
@@ -211,7 +204,7 @@ export class TiledGrid extends DatasetComponent {
                     //if (monitor) monitorDuration('*** TiledGrid parse end')
 
                     //redraw
-                    redrawFun()
+                    this.map.redraw()
                 })()
             }
         }
@@ -221,7 +214,7 @@ export class TiledGrid extends DatasetComponent {
     /**
      * Fill the view cache with all cells which are within a geographical envelope.
      * @abstract
-     * @param {import("../Dataset").Envelope} extGeo
+     * @param {import("../core/GeoCanvas.js").Envelope} extGeo
      * @returns {void}
      */
     updateViewCache(extGeo) {
@@ -232,19 +225,19 @@ export class TiledGrid extends DatasetComponent {
         if (!this.info) return
 
         //tiles within the scope
-        /** @type {import("../Dataset").Envelope|undefined} */
+        /** @type {import("../core/GeoCanvas.js").Envelope|undefined} */
         const tb = this.getTilingEnvelope(extGeo)
         if (!tb) return
 
         //grid bounds
-        /** @type {import("../Dataset").Envelope} */
+        /** @type {import("../core/GeoCanvas.js").Envelope} */
         const gb = this.info.tilingBounds
 
         for (let xT = Math.max(tb.xMin, gb.xMin); xT <= Math.min(tb.xMax, gb.xMax); xT++) {
             if (!this.cache[xT]) continue
             for (let yT = Math.max(tb.yMin, gb.yMin); yT <= Math.min(tb.yMax, gb.yMax); yT++) {
                 //get tile
-                /** @type {GridTile} */
+                /** @type {object} */
                 const tile = this.cache[xT][yT]
                 if (!tile || typeof tile === 'string') continue
 
@@ -261,4 +254,35 @@ export class TiledGrid extends DatasetComponent {
             }
         }
     }
+}
+
+function getGridTile(cells, xT, yT, gridInfo) {
+
+    const tile = {}
+
+    /** @type {Array.<import("../core/Dataset").Cell>} */
+    tile.cells = cells
+    /** @type {number} */
+    tile.x = xT
+    /** @type {number} */
+    tile.y = yT
+
+    const r = gridInfo.resolutionGeo
+    const s = gridInfo.tileSizeCell
+
+    /** @type {import("../core/GeoCanvas").Envelope} */
+    tile.extGeo = {
+        xMin: gridInfo.originPoint.x + r * s * tile.x,
+        xMax: gridInfo.originPoint.x + r * s * (tile.x + 1),
+        yMin: gridInfo.originPoint.y + r * s * tile.y,
+        yMax: gridInfo.originPoint.y + r * s * (tile.y + 1),
+    }
+
+    //convert cell coordinates into geographical coordinates
+    for (let cell of tile.cells) {
+        cell.x = tile.extGeo.xMin + cell.x * r
+        cell.y = tile.extGeo.yMin + cell.y * r
+    }
+
+    return tile
 }

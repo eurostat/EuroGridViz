@@ -1,0 +1,35 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 3000 })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.CSVGrid(map, "https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Europe/pop_2018_10km.csv", 10000)
+
+    //define style
+    const style = new gridviz.ShapeColorSizeStyle({
+        color: (cell) => d3.interpolateYlOrRd(cell.population / 20000)
+    })
+
+    //define legend
+    const legend = new gridviz.ColorLegend({
+        title: "Population",
+        colorScale: d3.interpolateYlOrRd,
+        ticks: 5,
+        textScale: (t) => t * 20000
+    })
+
+    //link legend to style
+    style.legends = [legend]
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

@@ -1,0 +1,37 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+<div id="ext_legend"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 1000, legendDivId: 'ext_legend' })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.CSVGrid(map, "https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Europe/pop_2018_10km.csv", 10000)
+
+    //define color style
+    const style = new gridviz.ShapeColorSizeStyle({
+        color: (c, r, z, scale) => scale(c.population),
+        viewScale: gridviz.viewScaleColor({ valueFunction: (c) => +c.population, colorScale: d3.interpolateYlOrRd, stretching: gridviz.logarithmicScale(-7) }),
+    })
+
+    //add legend
+    style.legends.push(
+        new gridviz.ColorLegend({
+            title: 'Number of inhabitants',
+            width: 400,
+            ticks: 6,
+            colorScale: d3.interpolateOrRd,
+            fun: (t, r, s) => s.max * Math.pow(t, 1 / 0.25),
+        })
+    )
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

@@ -16,9 +16,9 @@
     <script>
         let containerDiv = document.getElementById('viz-container')
 
-        new gviz.App(containerDiv)
+        new gridviz.Map(containerDiv)
             .setGeoCenter({ x: 4500000, y: 2900000 })
-            .setZoomFactor(3000)
+            .setZoom(3000)
             .addMultiScaleTiledGridLayer(
                 [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                 (r) =>
@@ -26,11 +26,11 @@
                     r +
                     'm/',
                 [
-                    new gviz.ShapeColorSizeStyle({
+                    new gridviz.ShapeColorSizeStyle({
                         colorCol: 'change',
                         color: (v, r, s) => {
                             const max = Math.max(Math.abs(s.min), Math.abs(s.max))
-                            const t = (Math.sign(v) * gviz.sPow(Math.abs(v) / max, 0.2)) / 2 + 0.5
+                            const t = (Math.sign(v) * gridviz.sPow(Math.abs(v) / max, 0.2)) / 2 + 0.5
                             return d3.interpolateSpectral(1 - t)
                         },
                         shape: () => 'square',
@@ -50,7 +50,7 @@
                         delete c.TOT_P_2021
                     },
                     cellInfoHTML: (c) => 'Population change is: <b>' + (c.change > 0 ? "+" : "") + c.change + '</b>',
-                    pixNb: 3,
+                    minPixelsPerCell: 3,
                 }
             )
     </script>

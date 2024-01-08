@@ -1,27 +1,24 @@
 //@ts-check
 'use strict'
 
-import { DatasetComponent } from '../DatasetComponent.js'
+import { Dataset } from '../core/Dataset.js'
 //import { fromUrl } from "geotiff"
 
 /**
  * @todo
  * A dataset composed of a single GeoTiff file.
  *
+ * @module dataset
  * @author Joseph Davies, Julien Gaffuri
  */
-export class GeoTIFF extends DatasetComponent {
-    /**
-     * @param {string} url The URL of the dataset.
-     * @param {number} resolution The dataset resolution in geographical unit.
-     * @param {{preprocess?:(function(import("../Dataset").Cell):boolean)}} opts
-     */
-    constructor(url, resolution, opts = {}) {
-        super(url, resolution, opts)
+export class GeoTIFF extends Dataset {
+
+    constructor(map, url, resolution, opts = {}) {
+        super(map, url, resolution, opts)
 
         /**
          * @private
-         * @type {Array.<import("../Dataset").Cell>} */
+         * @type {Array.<import("../core/Dataset").Cell>} */
         this.cells = []
 
         /**
@@ -33,10 +30,9 @@ export class GeoTIFF extends DatasetComponent {
     /**
      * Request data within a geographic envelope.
      *
-     * @param {import("../Dataset").Envelope|undefined} e
-     * @param {function():void} redraw
+     * @param {import("../core/GeoCanvas.js").Envelope|undefined} e
      */
-    getData(e, redraw) {
+    getData(e) {
         //check if data already loaded
         if (this.infoLoadingStatus != 'notLoaded') return this
 
@@ -108,7 +104,7 @@ export class GeoTIFF extends DatasetComponent {
     /**
      * Fill the view cache with all cells which are within a geographical envelope.
      *
-     * @param {import("../Dataset").Envelope} extGeo
+     * @param {import("../core/GeoCanvas.js").Envelope} extGeo
      * @returns {void}
      */
     updateViewCache(extGeo) {

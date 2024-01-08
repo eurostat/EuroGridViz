@@ -2,7 +2,7 @@ module.exports = {
     mode: 'production',
     output: {
         filename: 'gridviz.min.js',
-        library: 'gviz',
+        library: 'gridviz',
         libraryTarget: 'umd',
     },
     module: {

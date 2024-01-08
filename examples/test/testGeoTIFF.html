@@ -16,9 +16,9 @@
         <script>
             let containerDiv = document.getElementById('viz-container')
 
-            new gviz.App(containerDiv)
+            new gridviz.Map(containerDiv)
                 .setGeoCenter({ x: 4000000, y: 2260000 })
-                .setZoomFactor(500)
+                .setZoom(500)
                 .setLabelLayer(gviz_es.getEuronymeLabelLayer('FR', '20'))
                 .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
 
@@ -27,12 +27,12 @@
                     'https://raw.githubusercontent.com/eurostat/gridviz/master/assets/tiff/test/IMD_2018_010m_E42N20_03035_v020.tif',
                     1000,
                     [
-                        new gviz.SquareColorWGLStyle({
+                        new gridviz.SquareColorWGLStyle({
                             colorCol: 'Total_m2',
                             color: d3.interpolateSpectral,
                             tFun: (v, r, s) => 1 - Math.pow((v - s.min) / (s.max - s.min), 1.5),
                         }),
-                        new gviz.StrokeStyle({ maxZoom: 200 }),
+                        new gridviz.StrokeStyle({ maxZoom: 200 }),
                     ],
                     {
                         preprocess: (c) => {

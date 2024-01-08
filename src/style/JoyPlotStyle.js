@@ -1,10 +1,10 @@
 //@ts-check
 'use strict'
 
-import { Style } from '../Style.js'
+import { Style } from '../core/Style.js'
 
 /**
- *
+ * @module style
  * @author Julien Gaffuri
  */
 export class JoyPlotStyle extends Style {
@@ -13,43 +13,38 @@ export class JoyPlotStyle extends Style {
         super(opts)
         opts = opts || {}
 
-        /** The cell column where to get the value to represent.
-         * @type {string} */
-        this.heightCol = opts.heightCol
-
-        /** A function returning the height of a cell.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-        this.height = opts.height || ((v) => Math.sqrt(v))
+        /** A function returning the height of a cell in geographical unit.
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):number} */
+        this.height = opts.height || ((c, r) => r * Math.random()) //(c,r,z,vs) => {}
 
         /**
          * @type {function(number,{min:number, max:number},number,number):string} */
-        this.lineColor = opts.lineColor || ((y, ys, r, zf) => '#BBB')
+        this.lineColor = opts.lineColor || ((y, ys, r, z) => '#BBB')
         /**
          * @type {function(number,{min:number, max:number},number,number):number} */
-        this.lineWidth = opts.lineWidth || ((y, ys, r, zf) => zf)
+        this.lineWidth = opts.lineWidth || ((y, ys, r, z) => z)
         /**
          * @type {function(number,{min:number, max:number},number,number):string} */
-        this.fillColor = opts.fillColor || ((y, ys, r, zf) => '#c08c5968')
+        this.fillColor = opts.fillColor || ((y, ys, r, z) => '#c08c5968')
     }
 
+
     /**
-     * Draw cells as squares depending on their value.
-     *
-     * @param {Array.<import("../Dataset").Cell>} cells
-     * @param {number} r
-     * @param {import("../GeoCanvas").GeoCanvas} cg
-     * */
-    draw(cells, r, cg) {
+     * @param {Array.<import("../core/Dataset.js").Cell>} cells
+     * @param {import("../core/GeoCanvas.js").GeoCanvas} geoCanvas
+     * @param {number} resolution
+     * @override
+     */
+    draw(cells, geoCanvas, resolution) {
+
         //filter
         if (this.filter) cells = cells.filter(this.filter)
 
-        cg.ctx.lineJoin = 'round'
+        //
+        const z = geoCanvas.view.z
 
-        //zoom factor
-        const zf = cg.getZf()
-
-        //compute statistics
-        const stat = Style.getStatistics(cells, (c) => c[this.heightCol], true)
+        //get view scale
+        const viewScale = this.viewScale ? this.viewScale(cells, resolution, z) : undefined
 
         //index cells by y and x
         /**  @type {object} */
@@ -60,25 +55,23 @@ export class JoyPlotStyle extends Style {
                 row = {}
                 ind[cell.y] = row
             }
-            row[cell.x] = this.height(cell[this.heightCol], r, stat, zf)
+            row[cell.x] = this.height(cell, resolution, z, viewScale)
         }
 
         //compute extent
-        const e = cg.extGeo
+        const e = geoCanvas.extGeo
         if (!e) return
-        const xMin = Math.floor(e.xMin / r) * r
-        const xMax = Math.floor(e.xMax / r) * r
-        const yMin = Math.floor(e.yMin / r) * r
-        const yMax = Math.floor(e.yMax / r) * r
+        const xMin = Math.floor(e.xMin / resolution) * resolution
+        const xMax = Math.floor(e.xMax / resolution) * resolution
+        const yMin = Math.floor(e.yMin / resolution) * resolution
+        const yMax = Math.floor(e.yMax / resolution) * resolution
 
         /**  @type {{min:number, max:number}} */
         const ys = { min: yMin, max: yMax }
 
-        //draw in geo coordinates
-        cg.setCanvasTransform()
-
         //draw lines, row by row, stating from the top
-        for (let y = yMax; y >= yMin; y -= r) {
+        geoCanvas.ctx.lineJoin = 'round'
+        for (let y = yMax; y >= yMin; y -= resolution) {
             //get row
             const row = ind[y]
 
@@ -86,15 +79,15 @@ export class JoyPlotStyle extends Style {
             if (!row) continue
 
             //place first point
-            cg.ctx.beginPath()
-            cg.ctx.moveTo(xMin - r / 2, y)
+            geoCanvas.ctx.beginPath()
+            geoCanvas.ctx.moveTo(xMin - resolution / 2, y)
 
             //store the previous height
             /** @type {number|undefined} */
             let hG_
 
             //go through the line cells
-            for (let x = xMin; x <= xMax; x += r) {
+            for (let x = xMin; x <= xMax; x += resolution) {
                 //get column value
                 /** @type {number} */
                 let hG = row[x]
@@ -103,32 +96,32 @@ export class JoyPlotStyle extends Style {
                 if (hG || hG_) {
                     //draw line only when at least one of both values is non-null
                     //TODO test bezierCurveTo
-                    cg.ctx.lineTo(x + r / 2, y + hG)
+                    geoCanvas.ctx.lineTo(x + resolution / 2, y + hG)
                 } else {
                     //else move the point
-                    cg.ctx.moveTo(x + r / 2, y)
+                    geoCanvas.ctx.moveTo(x + resolution / 2, y)
                 }
                 //store the previous value
                 hG_ = hG
             }
 
             //last point
-            if (hG_) cg.ctx.lineTo(xMax + r / 2, y)
+            if (hG_) geoCanvas.ctx.lineTo(xMax + resolution / 2, y)
 
             //draw fill
-            const fc = this.fillColor(y, ys, r, zf)
+            const fc = this.fillColor(y, ys, resolution, z)
             if (fc && fc != 'none') {
-                cg.ctx.fillStyle = fc
-                cg.ctx.fill()
+                geoCanvas.ctx.fillStyle = fc
+                geoCanvas.ctx.fill()
             }
 
             //draw line
-            const lc = this.lineColor(y, ys, r, zf)
-            const lw = this.lineWidth(y, ys, r, zf)
+            const lc = this.lineColor(y, ys, resolution, z)
+            const lw = this.lineWidth(y, ys, resolution, z)
             if (lc && lc != 'none' && lw > 0) {
-                cg.ctx.strokeStyle = lc
-                cg.ctx.lineWidth = lw
-                cg.ctx.stroke()
+                geoCanvas.ctx.strokeStyle = lc
+                geoCanvas.ctx.lineWidth = lw
+                geoCanvas.ctx.stroke()
             }
         }
     }

@@ -1,60 +1,51 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
-    <head>
-        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-        <title></title>
-    </head>
+<div id="map" style="height: 500px; width: 800px"></div>
 
-    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-        <div id="viz-container" style="height: 100%; width: 100%"></div>
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
 
-        <script src="../../dist/gridviz.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
-        <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
-        <script>
-            let containerDiv = document.getElementById('viz-container')
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 1000, backgroundColor: "black" })
+        .addZoomButtons()
 
-            new gviz.App(containerDiv)
-                .setGeoCenter({ x: 3763437, y: 2791045 })
-                .setZoomFactor(620)
-                .setZoomFactorExtent([7, 2000])
+    //define multi resolution dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/'),
+        { preprocess: cell => +cell.TOT_P_2021 > 0 }
+    )
 
-                .setBackgroundColor('black')
-                .setLabelLayer(gviz_es.getEuronymeLabelLayer('FR', '20', { dark: true }))
-                .setBoundaryLayer(gviz_es.getEurostatBoundariesLayer())
-                .setViewFromURL()
+    //define style
+    const style = new gridviz.SquareColorWebGLStyle({
+        viewScale: (cells) => d3.max(cells, cell => +cell.TOT_P_2021),
+        tFun: (cell, resolution, z, max) => cell.TOT_P_2021 / max,
+        color: d3.interpolateMagma,
+        stretching: { fun: 'log', alpha: -7 },
+    })
 
-                .addMultiScaleTiledGridLayer(
-                    [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                    (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/inc/2019/' +
-                        r +
-                        'm/',
-                    [
-                        new gviz.SquareColorWGLStyle({
-                            colorCol: 'ind',
-                            color: d3.interpolateMagma,
-                            stretching: { fun: 'expRev', alpha: -7 },
-                        }),
-                        new gviz.StrokeStyle({ maxZoom: 15 }),
-                    ],
-                    {
-                        pixNb: 1.5,
-                        cellInfoHTML: (c) => '<b>' + c.ind + '</b> inhabitant' + (c.ind == 1 ? '' : 's'),
-                    }
-                )
+    //define stoke style
+    const strokeStyle = new gridviz.StrokeStyle({ visible: (z) => z < 70 })
 
-                .addBackgroundLayer({
-                    url: 'https://gisco-services.ec.europa.eu/maps/tiles/GreyEarth/EPSG3035/',
-                    resolutions: [
-                        156543.03392804097, 78271.51696402048, 39135.75848201024, 19567.87924100512,
-                        9783.93962050256, 4891.96981025128, 2445.98490512564,
-                    ],
-                    origin: [0, 6000000],
-                    filterColor: (zf) => '#000000d1',
-                })
-        </script>
-    </body>
-</html>
+    //define grid layer
+    const gridLayer = new gridviz.GridLayer(dataset, [style, strokeStyle], {
+        minPixelsPerCell: 1.5,
+        cellInfoHTML: (cell) => '<b>' + cell.TOT_P_2021 + '</b> inhabitant' + (cell.TOT_P_2021 == 1 ? '' : 's')
+    })
+
+    //define background layer
+    const backgroundLayer = new gridviz.BackgroundLayer(gridviz_eurostat.giscoBackgroundLayer("GreyEarth", 7, "EPSG3035", { filterColor: () => '#000000d1' }))
+
+    //define boundaries layer
+    const boundariesLayer = new gridviz.GeoJSONLayer(gridviz_eurostat.getEurostatBoundariesLayer())
+
+    //define label layer
+    const labelLayer = new gridviz.LabelLayer(gridviz_eurostat.getEuronymeLabelLayer('EUR', 20, { dark: true }))
+
+    //add layers to map
+    map.layers = [backgroundLayer, gridLayer, boundariesLayer, labelLayer]
+
+</script>

@@ -28,9 +28,9 @@
         <script>
             //map 1
 
-            const map1 = new gviz.App(document.getElementById('map'), { legendDivId: 'legend1' })
+            const map1 = new gridviz.Map(document.getElementById('map'), { legendDivId: 'legend1' })
                 .setGeoCenter({ x: 4500000, y: 2900000 })
-                .setZoomFactor(3000)
+                .setZoom(3000)
                 .addMultiScaleTiledGridLayer(
                     [1000, 2000, 5000, 10000, 20000, 50000, 100000],
                     (r) =>
@@ -38,23 +38,23 @@
                         r +
                         'm/',
                     [
-                        new gviz.SquareColorWGLStyle({
+                        new gridviz.SquareColorWGLStyle({
                             colorCol: 'TOT_P_2021',
-                            tFun: (value, resolution, stats) => gviz.sExp(value / stats.max, -50),
+                            tFun: (value, resolution, stats) => gridviz.sExp(value / stats.max, -50),
                         }),
                     ],
                     {
-                        pixNb: 3,
+                        minPixelsPerCell: 3,
                     }
                 ).addZoomButtons().addFullscreenButton()
 
             //legend
             map1.layers[0].styles[0].legends.push(
-                new gviz.ColorLegend({
+                new gridviz.ColorLegend({
                     title: 'Number of inhabitants',
                     ticks: 5,
                     colorRamp: d3.interpolateOrRd,
-                    fun: (t, r, s) => s.max * gviz.sExpRevInverse(t, 7),
+                    fun: (t, r, s) => s.max * gridviz.sExpRevInverse(t, 7),
                     x:10,
                     y:400
                 })

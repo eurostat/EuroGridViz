@@ -17,9 +17,9 @@
             const bgLayerURL = 'https://ec.europa.eu/eurostat/cache/GISCO/mbkg/elevation_shading/'
 
             let containerDiv = document.getElementById('viz-container')
-            const app = new gviz.App(containerDiv)
+            const map = new gridviz.Map(containerDiv)
                 .setGeoCenter({ x: 4500000, y: 2900000 })
-                .setZoomFactor(3000)
+                .setZoom(3000)
                 .setLabelLayer(
                     gviz_es.getEuronymeLabelLayer('EUR', 50, {
                         //  ccIn: [
@@ -61,13 +61,13 @@
                     gviz_es.getEurostatBoundariesLayer({
                         baseURL: nuts2jsonURL,
                         showOth: true,
-                        color: (f, zf) => {
+                        color: (f, z) => {
                             const p = f.properties
                             if (p.id >= 100000) return '#bcbcbc'
                             if (p.co === 'T') return '#888'
-                            if (zf < 400) return '#888'
-                            else if (zf < 1000) return p.lvl >= 3 ? '' : '#888'
-                            else if (zf < 2000) return p.lvl >= 2 ? '' : '#888'
+                            if (z < 400) return '#888'
+                            else if (z < 1000) return p.lvl >= 3 ? '' : '#888'
+                            else if (z < 2000) return p.lvl >= 2 ? '' : '#888'
                             else return p.lvl >= 1 ? '' : '#888'
                         },
                     })
@@ -76,7 +76,7 @@
                     url: bgLayerURL,
                     resolutions: Array.from({ length: 9 }, (_, i) => 28.00132289714475 * Math.pow(2, 10 - i)),
                     origin: [0, 6000000],
-                    filterColor: (zf) => '#ffffffc0',
+                    filterColor: (z) => '#ffffffc0',
                 })
 
             const colors = [
@@ -131,7 +131,7 @@
             }
 
             //add layer
-            app.addCSVGridLayer(
+            map.addCSVGridLayer(
                 //data URL
                 '../../assets/csv/Europe/TMAX_ranking.csv',
                 //resolution, in CRS unit (m)
@@ -139,13 +139,13 @@
                 //the style
                 [
                     // no pan for ShapeColorSizeStyle
-                    // new gviz.ShapeColorSizeStyle({
+                    // new gridviz.ShapeColorSizeStyle({
                     //     colorCol: 'value',
                     //     color: COLORFUNCTION,
                     // }),
 
                     // no tooltip for SquareColorWGLStyle
-                    // new gviz.SquareColorWGLStyle({
+                    // new gridviz.SquareColorWGLStyle({
                     //     colorCol: DATAFIELD,
                     //     tFun: (value) => {
                     //         //recode the values into 1 to 12. values 11-16 need to become class 5
@@ -164,7 +164,7 @@
                     //     colors: colors,
                     // }),
 
-                    new gviz.SquareColorCatWGLStyle({
+                    new gridviz.SquareColorCatWGLStyle({
                         colorCol: 'value',
                         color: {
                             1: colors[0],
@@ -223,15 +223,15 @@
             //add legend
             let colCat = colors.map((color,i)=> [color,categories[i]])
 
-            app.layers[0].styles[0].legends.push(
-                new gviz.ColorCategoryLegend({
+            map.layers[0].styles[0].legends.push(
+                new gridviz.ColorCategoryLegend({
                 title: 'Ranking since 1991',
                 colCat: colCat,
                 shape: 'square',
             }))
 
-            // app.layers[0].styles[0].legends.push(
-            //     new gviz.ColorDiscreteLegend({
+            // map.layers[0].styles[0].legends.push(
+            //     new gridviz.ColorDiscreteLegend({
             //         title: 'Ranking since 1991',
             //         titleFontSize: '15px',
             //         labelFontSize: '15px',

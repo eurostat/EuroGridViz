@@ -1,37 +1,22 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
-    <head>
-        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-        <title>Gridviz - Pillar style</title>
-    </head>
+<div id="map" style="height: 500px; width: 800px"></div>
 
-    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-        <div id="viz-container" style="height: 100%; width: 100%"></div>
+<script src="../../dist/gridviz.js"></script>
+<script>
 
-        <script src="../../dist/gridviz.js"></script>
-        <script>
-            let containerDiv = document.getElementById('viz-container')
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 500 })
+        .addZoomButtons()
 
-            new gviz.App(containerDiv)
-                .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(1500)
-                .addMultiScaleTiledGridLayer(
-                    [1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                    (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
-                        r +
-                        'm/',
-                    [
-                        new gviz.PillarStyle({
-                            heightCol: 'TOT_P_2021',
-                            height: (v, r, s, z) => 15 * r * gviz.sExpRev(v / s.max, -5),
-                        }),
-                    ],
-                    {
-                        pixNb: 12,
-                        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
-                    }
-                )
-        </script>
-    </body>
-</html>
+    //define dataset
+    const dataset = new gridviz.CSVGrid(map, "https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Europe/pop_2018_10km.csv", 10000)
+
+    //define style
+    const style = new gridviz.PillarStyle({
+        height: (cell, resolution, z) => 0.3 * cell.population,
+        simple: (resolution, z) => z > 1000
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

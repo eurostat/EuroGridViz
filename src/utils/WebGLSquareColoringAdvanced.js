@@ -70,7 +70,7 @@ export class WebGLSquareColoringAdvanced {
             if (stretching.fun == 'pow')
                 //sPow = (t, alpha = 3) => Math.pow(t, alpha);
                 fshString += '   float t = pow(vt, alpha);\n'
-            else if (stretching.fun == 'powRev')
+            else if (stretching.fun == 'powInv')
                 //sPowRev = (t, alpha = 3) => 1 - Math.pow(1 - t, 1 / alpha);
                 fshString += '   float t = 1.0-pow(1.0-vt, 1.0/alpha);\n'
             else if (stretching.fun == 'exp')
@@ -79,13 +79,13 @@ export class WebGLSquareColoringAdvanced {
                     stretching.alpha == 0
                         ? `float t = vt;`
                         : '   float t = (exp(vt * alpha) - 1.0) / (exp(alpha) - 1.0);\n'
-            else if (stretching.fun == 'expRev')
+            else if (stretching.fun == 'log')
                 //sExpRev = (t, alpha = 3) => alpha == 0 ? t : 1 - (1 / alpha) * Math.log(Math.exp(alpha) * (1 - t) + t);
                 fshString +=
                     stretching.alpha == 0
                         ? `float t = vt;`
                         : '   float t = 1.0 - (1.0 / alpha) * log(exp(alpha) * (1.0 - vt) + vt);\n'
-            else if (stretching.fun == 'circleLow') {
+            else if (stretching.fun == 'circle') {
                 if (stretching.alpha == 0)
                     //if (alpha == 0) return t;
                     fshString += '   float t = vt;\n'
@@ -99,7 +99,7 @@ export class WebGLSquareColoringAdvanced {
                         '   float a = alpha / (1.0 - alpha);\n' +
                         '   float t = sqrt(1.0 / (a * a) + vt * ( 2.0/a + 2.0 - vt )) - 1.0 / a;\n'
                 }
-            } else if (stretching.fun == 'circleHigh') {
+            } else if (stretching.fun == 'circleInv') {
                 // 1 - sCircleLow(1 - t, alpha)
                 if (stretching.alpha == 0)
                     //if (alpha == 0) return t;

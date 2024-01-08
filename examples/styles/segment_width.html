@@ -1,40 +1,32 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
-    <head>
-        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-        <title>Gridviz - Segment style</title>
-    </head>
+<div id="map" style="height: 500px; width: 800px"></div>
 
-    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-        <div id="viz-container" style="height: 100%; width: 100%"></div>
+<script src="../../dist/gridviz.js"></script>
+<script>
 
-        <script src="../../dist/gridviz.js"></script>
-        <script>
-            let containerDiv = document.getElementById('viz-container')
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 900 })
+        .addZoomButtons()
 
-            new gviz.App(containerDiv)
-                .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(2000)
-                .addMultiScaleTiledGridLayer(
-                    [1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                    (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
-                        r +
-                        'm/',
-                    [
-                        new gviz.SegmentStyle({
-                            orientation: () => 45,
-                            color: (v, r, s) => '#c08c59',
-                            length: (v, r) => r * 1.4142,
-                            widthCol: 'TOT_P_2021',
-                            width: (v, r, s, zf) => (r * gviz.sPow(v / s.max, 0.25)) / 1.4142,
-                        }),
-                    ],
-                    {
-                        pixNb: 7,
-                        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
-                    }
-                )
-        </script>
-    </body>
-</html>
+    //define multi resolution dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/'),
+        { preprocess: cell => +cell.TOT_P_2021 > 0 }
+    )
+
+    //define style
+    const style = new gridviz.SegmentStyle({
+        color: () => '#c08c59',
+        viewScale: gridviz.viewScaleQuantile({ valueFunction: (c) => +c.TOT_P_2021, classNumber: 5, minSizePix: 1, maxSizeFactor: 1.4141 / 2 }),
+        width: (cell, resolution, z, viewScale) => viewScale(+cell.TOT_P_2021),
+        length: (cell, resolution) => resolution * 1.4142,
+        orientation: () => 45,
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style], {
+        minPixelsPerCell: 7,
+        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)'
+    })]
+
+</script>

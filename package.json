@@ -1,6 +1,6 @@
 {
     "name": "gridviz",
-    "version": "2.1.17",
+    "version": "3.0.1",
     "description": "Visualization tool for gridded statistics",
     "keywords": [
         "statistics",
@@ -40,7 +40,7 @@
         "start": "export NODE_OPTIONS=--openssl-legacy-provider && webpack --config webpack.config.dev.cjs",
         "start-dev": "webpack --config webpack.config.dev.cjs",
         "server": "webpack serve -c webpack.config.dev.cjs",
-        "doc": "./node_modules/.bin/jsdoc src/ src/dataset src/legend src/style -d docs/jsdoc",
+        "doc": "./node_modules/.bin/jsdoc -c docs/jsdoc/jsdoc.conf.json",
         "bp": "webpack --config webpack.config.prod.cjs",
         "test": "jest"
     },
@@ -49,12 +49,14 @@
         "src/**/*.js"
     ],
     "dependencies": {
+        "d3-array": "^3.2.4",
         "d3-color": "^3.1.0",
         "d3-fetch": "^3.0.1",
-        "d3-format": "^3.1.0",
         "d3-random": "^3.0.1",
+        "d3-scale": "^4.0.2",
         "d3-selection": "^3.0.0",
-        "d3-zoom": "^3.0.0"
+        "d3-zoom": "^3.0.0",
+        "jsdoc": "^4.0.2"
     },
     "devDependencies": {
         "@babel/core": "^7.9.0",

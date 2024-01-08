@@ -1,54 +1,35 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
-    <head>
-        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-        <title>Gridviz - Side style</title>
-    </head>
+<div id="map" style="height: 500px; width: 800px"></div>
 
-    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-        <div id="viz-container" style="height: 100%; width: 100%"></div>
+<script src="../../dist/gridviz.js"></script>
+<script>
 
-        <script src="../../dist/gridviz.js"></script>
-        <script>
-            let containerDiv = document.getElementById('viz-container')
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 1500, backgroundColor: "#ede4cc" })
+        .addZoomButtons()
 
-            new gviz.App(containerDiv)
-                .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(2000)
-                .addMultiScaleTiledGridLayer(
-                    [1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                    (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
-                        r +
-                        'm/',
-                    [
-                        new gviz.SideStyle({
-                            valueCol: 'TOT_P_2021',
-                            value: (v1, v2) => {
-                                return (v2 != undefined ? +v2 : 0) - (v1 != undefined ? +v1 : 0)
-                            },
-                            color: (side, r, s, z) =>
-                                (side.value > 0 && side.or === 'h') || (side.value < 0 && side.or === 'v')
-                                    ? 'black'
-                                    : 'white',
-                            width: (side, r, s, z) => {
-                                const max = Math.max(Math.abs(s.min), Math.abs(s.max))
-                                return (
-                                    r *
-                                    (0.01 +
-                                        (side.or === 'v' ? 0.6 : 1) *
-                                            0.333 *
-                                            gviz.sPow(Math.abs(side.value) / max, 0.3))
-                                )
-                            },
-                            fillColor: (c) => '#e2c9b2',
-                        }),
-                    ],
-                    {
-                        pixNb: 6,
-                        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
-                    }
-                )
-        </script>
-    </body>
-</html>
+    //define dataset
+    const dataset = new gridviz.CSVGrid(map, "https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Europe/pop_2018_10km.csv", 10000)
+
+    //define style
+    const sideValue = side => (+side.c2?.population || 0) - (+side.c1?.population || 0)
+    const scale = gridviz.powerScale(0.6)
+    const style = new gridviz.SideStyle({
+        color: (side) => {
+            //color is either black or white depending on the value difference and the segment orientation
+            const value = sideValue(side)
+            if (value > 0 && side.or === 'h') return 'black'
+            if (value < 0 && side.or === 'v') return 'black'
+            return 'white'
+        },
+        width: (side, resolution, z) => {
+            //the larger the difference, the wider the segment
+            const t = Math.abs(sideValue(side)) / 80000
+            return 200 + resolution * (side.or === 'v' ? 0.05 : 0.1) * scale(t)
+        },
+        length: (side, resolution) => resolution * 0.9
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

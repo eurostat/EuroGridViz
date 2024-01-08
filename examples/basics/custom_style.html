@@ -1,0 +1,51 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 400 })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/')
+    )
+
+    //create custom style
+    const customStyle = new gridviz.Style({
+        //define draw function
+        drawFun: (cells, geoCanvas, resolution) => {
+
+            //draw each cell as an arrow
+            //with a fill color depending on the property "TOT_P_2021"
+            for (let cell of cells) {
+
+                //do not draw cells with no data
+                if (!cell.TOT_P_2021) continue
+
+                //set fill color as a shade from cyan to red depending on "TOT_P_2021" property
+                const t = Math.floor(255 * Math.round(Math.pow(cell.TOT_P_2021 / 1000000, 0.2) * 6) / 6)
+                geoCanvas.ctx.fillStyle = "rgb(" + t + "," + (255 - t) + "," + (255 - t) + ")"
+
+                //fill arrow
+                geoCanvas.ctx.beginPath()
+                //left point
+                geoCanvas.ctx.moveTo(cell.x, cell.y)
+                //bottom center point
+                geoCanvas.ctx.lineTo(cell.x + resolution / 2, cell.y + resolution / 3)
+                //right point
+                geoCanvas.ctx.lineTo(cell.x + resolution, cell.y)
+                //top center point
+                geoCanvas.ctx.lineTo(cell.x + resolution / 2, cell.y + resolution * 4 / 3)
+                geoCanvas.ctx.fill()
+            }
+
+        }
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [customStyle], { minPixelsPerCell: 12 })]
+
+</script>

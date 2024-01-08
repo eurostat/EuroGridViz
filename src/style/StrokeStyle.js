@@ -1,10 +1,10 @@
 //@ts-check
 'use strict'
 
-import { Style } from '../Style.js'
+import { Style } from '../core/Style.js'
 
 /**
- *
+ * @module style
  * @author Julien Gaffuri
  */
 export class StrokeStyle extends Style {
@@ -13,111 +13,84 @@ export class StrokeStyle extends Style {
         super(opts)
         opts = opts || {}
 
-        /** The name of the column/attribute of the tabular data where to retrieve the variable for color.
-         * @type {string} */
-        this.strokeColorCol = opts.strokeColorCol
-
-        /** A function returning the color of the stroke.
-         * @type {function(number,number,import("../Style").Stat|undefined):string} */
-        this.strokeColor = opts.strokeColor || (() => '#666')
-
-        /** The name of the column/attribute of the tabular data where to retrieve the variable for size.
-         * @type {string} */
-        this.sizeCol = opts.sizeCol
+        /** A function returning the color of the cell.
+         * @type {function(import('../core/Dataset.js').Cell,number,number,object):string} */
+        this.strokeColor = opts.strokeColor || (() => "#666") //(c,r,z,vs) => {}
 
         /** A function returning the size of a cell in geographical unit.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-        this.size = opts.size
-
-        /** The stroke line width, in pixels.
-         * @type {string} */
-        this.strokeWidthCol = opts.strokeWidthCol
+         * @type {function(import('../core/Dataset.js').Cell,number,number,object):number} */
+        this.size = opts.size || ((cell, resolution) => resolution) //(c,r,z,vs) => {}
 
         /** The stroke line width in geographical unit.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-        this.strokeWidth = opts.strokeWidth // (v,r,s,z)=>...
+         * @type {function(import('../core/Dataset.js').Cell,number,number,object):number} */
+        this.strokeWidth = opts.strokeWidth || ((cell, resolution, z) => z * 1.5) //(c,r,z,vs) => {}
 
         /** A function returning the shape of a cell.
-         * @type {function(import("../Dataset").Cell):import("../Style").Shape} */
-        this.shape = opts.shape || (() => 'square')
+        * @type {function(import("../core/Dataset.js").Cell,number,number,object):import("../core/Style.js").Shape} */
+        this.shape = opts.shape || (() => "square") //(c,r,z,vs) => {}
     }
 
     /**
      * Draw cells as squares, with various colors and size.
      *
-     * @param {Array.<import("../Dataset").Cell>} cells
-     * @param {number} r
-     * @param {import("../GeoCanvas").GeoCanvas} cg
+     * @param {Array.<import("../core/Dataset").Cell>} cells
+     * @param {import("../core/GeoCanvas").GeoCanvas} geoCanvas
+     * @param {number} resolution
      */
-    draw(cells, r, cg) {
+    draw(cells, geoCanvas, resolution) {
+
         //filter
         if (this.filter) cells = cells.filter(this.filter)
 
-        //zoom factor
-        const zf = cg.getZf()
+        //
+        const z = geoCanvas.view.z
 
-        let statColor
-        if (this.strokeColorCol) statColor = Style.getStatistics(cells, (c) => c[this.strokeColorCol], true)
+        //get view scale
+        const viewScale = this.viewScale ? this.viewScale(cells, resolution, z) : undefined
 
-        let statSize
-        if (this.sizeCol) statSize = Style.getStatistics(cells, (c) => c[this.sizeCol], true)
-
-        let statWidth
-        if (this.strokeWidthCol) statWidth = Style.getStatistics(cells, (c) => c[this.strokeWidthCol], true)
-
-        //draw with HTML canvas
-        //in geo coordinates
-        cg.setCanvasTransform()
-
-        const r2 = r * 0.5
+        const r2 = resolution * 0.5
         for (let cell of cells) {
-            //color
-            const col = this.strokeColor
-                ? this.strokeColor(cell[this.strokeColorCol], r, statColor)
-                : undefined
-            if (!col || col === 'none') continue
-            cg.ctx.strokeStyle = col
 
-            //size
-            /** @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-            let s_ = this.size || (() => r)
+            //color
+            const col = this.strokeColor ? this.strokeColor(cell, resolution, z, viewScale) : undefined
+            if (!col || col === 'none') continue
+            geoCanvas.ctx.strokeStyle = col
+
             //size - in geo unit
-            const sG = s_(cell[this.sizeCol], r, statSize, zf)
+            const sG = this.size ? this.size(cell, resolution, z, viewScale) : resolution
 
             //width
-            const wi = this.strokeWidth
-                ? this.strokeWidth(cell[this.strokeWidthCol], r, statWidth, zf)
-                : 1 * zf
+            const wi = this.strokeWidth ? this.strokeWidth(cell, resolution, z, viewScale) : 1 * z
             if (!wi || wi <= 0) continue
-            cg.ctx.lineWidth = wi
+            geoCanvas.ctx.lineWidth = wi
 
             //shape
-            const shape = this.shape ? this.shape(cell) : 'square'
+            const shape = this.shape ? this.shape(cell, resolution, z, viewScale) : 'square'
             if (shape === 'none') continue
 
             //get offset
-            const offset = this.offset(cell, r, zf)
+            const offset = this.offset(cell, resolution, z)
 
             if (shape === 'square') {
                 //draw square
-                const d = r * (1 - sG / r) * 0.5
-                cg.ctx.beginPath()
-                cg.ctx.rect(cell.x + d + offset.dx, cell.y + d + offset.dy, sG, sG)
-                cg.ctx.stroke()
+                const d = resolution * (1 - sG / resolution) * 0.5
+                geoCanvas.ctx.beginPath()
+                geoCanvas.ctx.rect(cell.x + d + offset.dx, cell.y + d + offset.dy, sG, sG)
+                geoCanvas.ctx.stroke()
             } else if (shape === 'circle') {
                 //draw circle
-                cg.ctx.beginPath()
-                cg.ctx.arc(cell.x + r2 + offset.dx, cell.y + r2 + offset.dy, sG * 0.5, 0, 2 * Math.PI, false)
-                cg.ctx.stroke()
+                geoCanvas.ctx.beginPath()
+                geoCanvas.ctx.arc(cell.x + r2 + offset.dx, cell.y + r2 + offset.dy, sG * 0.5, 0, 2 * Math.PI, false)
+                geoCanvas.ctx.stroke()
             } else if (shape === 'diamond') {
                 const s2 = sG * 0.5
-                cg.ctx.beginPath()
-                cg.ctx.moveTo(cell.x + r2 - s2, cell.y + r2)
-                cg.ctx.lineTo(cell.x + r2, cell.y + r2 + s2)
-                cg.ctx.lineTo(cell.x + r2 + s2, cell.y + r2)
-                cg.ctx.lineTo(cell.x + r2, cell.y + r2 - s2)
-                cg.ctx.lineTo(cell.x + r2 - s2, cell.y + r2)
-                cg.ctx.stroke()
+                geoCanvas.ctx.beginPath()
+                geoCanvas.ctx.moveTo(cell.x + r2 - s2, cell.y + r2)
+                geoCanvas.ctx.lineTo(cell.x + r2, cell.y + r2 + s2)
+                geoCanvas.ctx.lineTo(cell.x + r2 + s2, cell.y + r2)
+                geoCanvas.ctx.lineTo(cell.x + r2, cell.y + r2 - s2)
+                geoCanvas.ctx.lineTo(cell.x + r2 - s2, cell.y + r2)
+                geoCanvas.ctx.stroke()
             } else if (shape === 'donut') {
                 console.error('Not implemented')
             } else {
@@ -126,6 +99,6 @@ export class StrokeStyle extends Style {
         }
 
         //update legends
-        //this.updateLegends({ style: this, r: resolution, zf: zf, sSize: statSize, sColor: statColor });
+        this.updateLegends({ style: this, resolution: resolution, z: z, viewScale: viewScale })
     }
 }

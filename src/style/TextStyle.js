@@ -1,10 +1,10 @@
 //@ts-check
 'use strict'
 
-import { Style } from '../Style.js'
+import { Style } from '../core/Style.js'
 
 /**
- *
+ * @module style
  * @author Julien Gaffuri
  */
 export class TextStyle extends Style {
@@ -13,120 +13,99 @@ export class TextStyle extends Style {
         super(opts)
         opts = opts || {}
 
-        /** The name of the column/attribute of the tabular data where to retrieve the variable for text.
-         * @type {string} */
-        this.textCol = opts.textCol
-
         /** A function returning the text of a cell.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):string} */
-        this.text = opts.text || ((v, r, s, z) => 'X')
-
-        /** The name of the column/attribute of the tabular data where to retrieve the variable for color.
-         * @type {string} */
-        this.colorCol = opts.colorCol
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):string} */
+        this.text = opts.text || (() => 'X') //(c,r,z,vs) => {}
 
         /** A function returning the color of the cell.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):string} */
-        this.color = opts.color || (() => '#EA6BAC')
-
-        /** The name of the column/attribute of the tabular data where to retrieve the variable for font size.
-         * @type {string} */
-        this.fontSizeCol = opts.fontSizeCol
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):string} */
+        this.color = opts.color || (() => "black") //(c,r,z,vs) => {}
 
         /** A function returning the font size of a cell in geo unit.
-         * @type {function(number,number,import("../Style").Stat|undefined,number):number} */
-        this.fontSize = opts.fontSize || ((v, r, s, z) => r * 0.8)
+         * @type {function(import('../core/Dataset.js').Cell, number, number,object):number} */
+        this.fontSize = opts.fontSize || ((cell, resolution) => resolution) //(c,r,z,vs) => {}
 
         /** The text font family.
-         * @type {string} */
-        this.fontFamily = opts.fontFamily || 'Arial'
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):string} */
+        this.fontFamily = opts.fontFamily || (() => 'Arial')
 
         /** The text font weight.
-         * @type {string} */
-        this.fontWeight = opts.fontWeight || 'bold'
+         * @type {function(import('../core/Dataset.js').Cell, number, number, object):string} */
+        this.fontWeight = opts.fontWeight || (() => 'bold')
     }
 
     /**
      * Draw cells as text.
      *
-     * @param {Array.<import("../Dataset").Cell>} cells
-     * @param {number} r
-     * @param {import("../GeoCanvas").GeoCanvas} cg
+     * @param {Array.<import("../core/Dataset").Cell>} cells
+     * @param {import("../core/GeoCanvas").GeoCanvas} geoCanvas
+     * @param {number} resolution
      */
-    draw(cells, r, cg) {
+    draw(cells, geoCanvas, resolution) {
+
         //filter
         if (this.filter) cells = cells.filter(this.filter)
 
-        //zoom factor
-        const zf = cg.getZf()
+        //
+        const z = geoCanvas.view.z
 
-        let statText
-        if (this.textCol) {
-            //compute text variable statistics
-            statText = Style.getStatistics(cells, (c) => c[this.textCol], true)
-        }
-
-        let statColor
-        if (this.colorCol) {
-            //compute color variable statistics
-            statColor = Style.getStatistics(cells, (c) => c[this.colorCol], true)
-        }
-
-        let statFontSize
-        if (this.fontSizeCol) {
-            //if size is used, sort cells by size so that the biggest are drawn first
-            cells.sort((c1, c2) => c2[this.fontSizeCol] - c1[this.fontSizeCol])
-            //and compute size variable statistics
-            statFontSize = Style.getStatistics(cells, (c) => c[this.fontSizeCol], true)
-        }
+        //get view scale
+        const viewScale = this.viewScale ? this.viewScale(cells, resolution, z) : undefined
 
         //draw with HTML canvas
         //in screen coordinates
-        cg.initCanvasTransform()
+        geoCanvas.initCanvasTransform()
 
         for (let cell of cells) {
             //get cell text
-            const text = this.text ? this.text(cell[this.textCol], r, statText, zf) : undefined
+            const text = this.text ? this.text(cell, resolution, z, viewScale) : undefined
             if (text == undefined || text == null || text + '' === '') continue
 
             //color
-            const col = this.color ? this.color(cell[this.colorCol], r, statColor, zf) : undefined
+            const col = this.color ? this.color(cell, resolution, z, viewScale) : undefined
             if (!col) continue
-            cg.ctx.fillStyle = col
+            geoCanvas.ctx.fillStyle = col
 
             //font size
             //size - in pixel unit
-            const fontSizePix = this.fontSize(cell[this.fontSizeCol], r, statFontSize, zf) / zf
+            const fontSizePix = this.fontSize(cell, resolution, z, viewScale) / z
+            if (!fontSizePix) continue
 
             //set font
-            const fontFamily = this.fontFamily || 'Arial'
-            const fontWeight = this.fontWeight || 'bold'
-            cg.ctx.font = fontWeight + ' ' + fontSizePix + 'px ' + fontFamily
+            const fontFamily = this.fontFamily ? this.fontFamily(cell, resolution, z, viewScale) : 'Arial'
+            const fontWeight = this.fontWeight ? this.fontWeight(cell, resolution, z, viewScale) : 'bold'
+            geoCanvas.ctx.font = fontWeight + ' ' + fontSizePix + 'px ' + fontFamily
 
             //get offset
-            const offset = this.offset(cell, r, zf)
+            const offset = this.offset(cell, resolution, z)
 
             //text position
-            cg.ctx.textAlign = 'center'
-            const tx = cg.geoToPixX(cell.x + r * 0.5 + offset.dx)
-            const ty = cg.geoToPixY(cell.y + r * 0.5 + offset.dy) + fontSizePix * 0.3 //it should be 0.5 but 0.3 seems to work better
+            geoCanvas.ctx.textAlign = 'center'
+            const tx = geoCanvas.geoToPixX(cell.x + resolution * 0.5 + offset.dx)
+            const ty = geoCanvas.geoToPixY(cell.y + resolution * 0.5 + offset.dy) + fontSizePix * 0.3 //it should be 0.5 but 0.3 seems to work better
 
             //draw the text
-            cg.ctx.fillText(text, tx, ty)
+            geoCanvas.ctx.fillText(text, tx, ty)
         }
 
         //update legends
-        this.updateLegends({ style: this, r: r, zf: zf, sColor: statColor })
+        this.updateLegends({ style: this, resolution: resolution, z: z, viewScale: viewScale })
     }
 
     /**
      * Build a function [0,1]->string for characters legend
      *
      * @param {Array.<string>} chars
+     * @param {(function(number):number)|undefined} scale
      * @returns {function(number):string}
      */
-    static getCharLegendFun(chars) {
+    static textScale(chars, scale = undefined) {
         const nb = chars.length
-        return (t) => (t == 0 ? '' : t == 1 ? chars[nb - 1] : chars[Math.floor(t * nb)])
+        return (t) => {
+            if (scale) t = scale(t)
+            if (t == 0) return ""
+            if (t >= 1) return chars[nb - 1]
+            return chars[Math.floor(t * nb)]
+        }
     }
 }

@@ -1,61 +1,39 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
+<div id="map" style="height: 500px; width: 800px"></div>
 
-<head>
-    <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-    <title>Gridviz - Shape/color/size style</title>
-</head>
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script>
 
-<body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-    <div id="viz-container" style="height: 100%; width: 100%"></div>
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 3763437, y: 2891045, z: 50.1, zoomExtent: [2, 2000], backgroundColor: "black" })
+        .addZoomButtons()
 
-    <script src="../../dist/gridviz.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
-    <script>
-        let containerDiv = document.getElementById('viz-container')
-
-        const app = new gviz.App(containerDiv, {
-            transparentBackground: false,
-            tooltip: {
-                yMouseOffset: -5,
-                xMouseOffset: -5,
+    //define multi resolution dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/ind/2019/' + resolution + 'm/'),
+        {
+            preprocess: (c) => {
+                //compute age ratio
+                const yyy = +c.ind_0_3 + +c.ind_4_5 + +c.ind_6_10 + +c.ind_11_17 + +c.ind_18_24
+                const ooo = +c.ind_65_79 + +c.ind_80p
+                c.age_ratio = yyy + ooo == 0 ? 0 : (yyy - ooo) / (yyy + ooo)
+                c.age_ratio = c.age_ratio * 0.5 + 0.5
             },
-        })
-            .setGeoCenter({ x: 3763437, y: 2891045 })
-            .setBackgroundColor("black")
-            .setZoomFactor(50.1)
-            .setZoomFactorExtent([7, 2000])
-            .addMultiScaleTiledGridLayer(
-                [200, 400, 600, 1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                (r) =>
-                    'https://raw.githubusercontent.com/jgaffuri/tiled-grid-france-filosofi/main/out/csv/met/ind/2019/' +
-                    r +
-                    'm/',
-                [
-                    new gviz.NinjaStarStyle({
-                        sizeCol: 'ind',
-                        size: (v, r, s, zf) => gviz.sPow(v / s.max, 0.26),
-                        colorCol: 'age_ratio',
-                        color: (v, r, s) => d3.interpolateSpectral(1 - v),
-                        shape: () => 'p',
-                    }),
-                ],
-                {
-                    pixNb: 12,
-                    preprocess: (c) => {
-                        //<24
-                        const yyy = +c.ind_0_3 + +c.ind_4_5 + +c.ind_6_10 + +c.ind_11_17 + +c.ind_18_24
-                        //>65
-                        const ooo = +c.ind_65_79 + +c.ind_80p
-                        c.age_ratio = yyy + ooo == 0 ? 0 : (yyy - ooo) / (yyy + ooo)
-                        c.age_ratio = c.age_ratio * 0.5 + 0.5
-                    },
-                }
-            )
+        }
+    )
 
-    </script>
-</body>
+    //define style
+    const style = new gridviz.NinjaStarStyle({
+        viewScale: gridviz.viewScale({ valueFunction: (c) => +c.ind, stretching: gridviz.powerScale(0.26), range: [0, 1] }),
+        size: (c, r, z, viewScale) => viewScale(c.ind),
+        color: (c) => d3.interpolateSpectral(1 - c.age_ratio),
+        shape: () => 'p',
+    })
 
-</html>
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style], { minPixelsPerCell: 12 })]
+
+</script>

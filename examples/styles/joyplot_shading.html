@@ -1,79 +1,50 @@
-<!DOCTYPE html>
-<html lang="en" style="height: 100%">
-    <head>
-        <meta name="viewport" content="maximum-scale=1.0, user-scalable=no" />
-        <title>Gridviz - Joyplot style</title>
-    </head>
+<div id="map" style="height: 500px; width: 800px"></div>
 
-    <body style="margin: 0; height: 100%; font-family: Arial, Helvetica, sans-serif; overflow: hidden">
-        <div id="viz-container" style="height: 100%; width: 100%"></div>
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@2.0.0"></script>
+<script>
 
-        <script src="../../dist/gridviz.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@1.0.0"></script>
-        <script>
-            let containerDiv = document.getElementById('viz-container')
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4000000, y: 2960000, z: 1000, zoomExtent: [30, 7000] })
+        .setViewFromURL()
+        .addZoomButtons()
 
-            new gviz.App(containerDiv)
-                .setGeoCenter({ x: 4000000, y: 2960000 })
-                .setZoomFactor(2000)
-                .setZoomFactorExtent([30, 7000])
-                .setViewFromURL()
-                .setLabelLayer(
-                    gviz_es.getEuronymeLabelLayer('EUR', 50, {
-                        ex: 1.8,
-                        exSize: 1,
-                        color: () => 'black',
-                        haloColor: () => '#ffffff',
-                        haloWidth: () => 3,
-                    })
-                )
-                .setBoundaryLayer(
-                    gviz_es.getEurostatBoundariesLayer({
-                        scale: '10M',
-                        col: '#00000044',
-                        lineDash: () => [],
-                    })
-                )
-                .addMultiScaleTiledGridLayer(
-                    [1000, 2000, 5000, 10000, 20000, 50000, 100000],
-                    (r) =>
-                        'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' +
-                        r +
-                        'm/',
-                    [
-                        new gviz.JoyPlotStyle({
-                            heightCol: 'TOT_P_2021',
-                            height: (v, r, s, zf) => 5 * r * gviz.sPow(v / s.max, 0.4),
-                            lineColor: (y, ys, r, zf) => {
-                                const t = 255 - (255 * (y - ys.min)) / (ys.max - ys.min)
-                                return 'rgb(' + t + ',' + t + ',' + t + ')'
-                            },
-                            lineWidth: (y, ys, r, zf) => 0.1 * r,
-                            fillColor: (y, ys, r, zf) =>
-                                'rgba(0,0,0,' + (0.0 + (1 - (y - ys.min) / (ys.max - ys.min)) * 0.9) + ')',
-                            /*fillColor: (y, ys, r, zf) => {
-                            let t = (y - ys.min) / (ys.max - ys.min);
-                            t = Math.pow(t, 1);
-                            t *= 255;
-                            return "rgba(" + t + "," + t + "," + t + ",0.7)"
-                        },*/
-                        }),
-                    ],
-                    {
-                        pixNb: 8,
-                        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
-                    }
-                )
+    //define multi resolution dataset
+    const dataset = new gridviz.MultiResolutionDataset(
+        [1000, 2000, 5000, 10000, 20000, 50000, 100000],
+        resolution => new gridviz.TiledGrid(map, 'https://raw.githubusercontent.com/jgaffuri/tiledgrids/main/data/europe/population2/' + resolution + 'm/')
+    )
 
-                .addBackgroundLayer({
-                    url: 'https://gisco-services.ec.europa.eu/maps/tiles/GreyEarth/EPSG3035/',
-                    resolutions: [
-                        156543.03392804097, 78271.51696402048, 39135.75848201024, 19567.87924100512,
-                        9783.93962050256, 4891.96981025128, 2445.98490512564,
-                    ],
-                    origin: [0, 6000000],
-                    filterColor: (zf) => '#ffffffd3',
-                })
-        </script>
-    </body>
-</html>
+    //define style
+    const style = new gridviz.JoyPlotStyle({
+        height: (c, r, z, scale) => scale(c.TOT_P_2021),
+        viewScale: gridviz.viewScale({ valueFunction: (c) => +c.TOT_P_2021, maxSizeFactor: 5, stretching: gridviz.powerScale(0.4) }),
+        lineColor: (y, ys, r, z) => {
+            const t = 255 - (255 * (y - ys.min)) / (ys.max - ys.min)
+            return 'rgb(' + t + ',' + t + ',' + t + ')'
+        },
+        lineWidth: (y, ys, r, z) => 0.1 * r,
+        fillColor: (y, ys, r, z) =>
+            'rgba(0,0,0,' + (0.0 + (1 - (y - ys.min) / (ys.max - ys.min)) * 0.9) + ')',
+    })
+
+    //define grid layer
+    const gridLayer = new gridviz.GridLayer(dataset, [style], {
+        minPixelsPerCell: 8,
+        cellInfoHTML: (c) => '<b>' + c.TOT_P_2021 + '</b> inhabitant(s)',
+    })
+
+    //define label layer
+    const labelLayer = new gridviz.LabelLayer(
+        gridviz_eurostat.getEuronymeLabelLayer('EUR', 50, {
+            ex: 1.8,
+            exSize: 1,
+            color: () => 'black',
+            haloColor: () => '#ffffff',
+            haloWidth: () => 3,
+        }))
+
+    //add layers to map
+    map.layers = [gridLayer, labelLayer]
+
+</script>

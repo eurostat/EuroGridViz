@@ -1,0 +1,47 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-geo@3"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4700000, y: 2800000, z: 1000 })
+        .addZoomButtons()
+
+    //define background layer
+    const backgroundLayer = new gridviz.BackgroundLayer(gridviz_eurostat.giscoBackgroundLayer("NaturalEarth", 7, "EPSG3035", { filterColor: () => '#ffffff88' }))
+
+    //ETRS89-LAEA projection (EPSG 3035)
+    const proj = d3
+        .geoAzimuthalEqualArea()
+        .rotate([-10, -52])
+        .reflectX(false)
+        .reflectY(true)
+        .scale(6378137)
+        .translate([4321000, 3210000])
+
+    //define label layer
+    const labelLayer = new gridviz.LabelLayer({
+        url: 'https://raw.githubusercontent.com/eurostat/euronym/main/pub/v2/UTF/50/EUR.csv',
+        preprocess: (label) => {
+            //project from geo coordinates to ETRS89-LAEA
+            const p = proj([label.lon, label.lat])
+            label.x = p[0]
+            label.y = p[1]
+            delete label.lon
+            delete label.lat
+        },
+        style: (label, zoom) => {
+            if (label.rs < 0.9 * zoom) return
+            if (label.r1 < 0.9 * zoom) return '1em Arial'
+            return '1.5em Arial'
+        }
+    })
+
+    //add layer to map
+    map.layers = [backgroundLayer, labelLayer]
+    map.redraw()
+
+</script>

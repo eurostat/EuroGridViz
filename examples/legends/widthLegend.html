@@ -1,0 +1,46 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-color@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-interpolate@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-format@3"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 1000 })
+        .addZoomButtons()
+
+    //define dataset
+    const dataset = new gridviz.CSVGrid(map, "https://raw.githubusercontent.com/eurostat/gridviz/master/assets/csv/Europe/pop_2018_10km.csv", 10000)
+
+    //define style
+    const width = (population) => {
+        if (!population) return 0
+        let t = population / 1000000
+        t = t > 1 ? 1 : t
+        t = gridviz.logarithmicScale(-5)(t)
+        return t * 10000 * 0.95
+    }
+    const style = new gridviz.SegmentStyle({
+        width: (cell) => width(cell.population),
+        orientation: () => 0,
+        color: () => "black",
+        length: () => 10000
+    })
+
+    //define legends
+    style.legends = gridviz.sizeLegend(
+        [500000, 200000, 10000],
+        width, {
+        title: "Population",
+        shape: "line",
+        color: "black",
+        length: () => 15000,
+        labelFormat: d3.format(',.2r'),
+    })
+
+    //add layer to map
+    map.layers = [new gridviz.GridLayer(dataset, [style])]
+
+</script>

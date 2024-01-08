@@ -1,0 +1,18 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridviz-eurostat@2.0.0"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 1000 })
+        .addZoomButtons()
+
+    //define background layer
+    const backgroundLayer = new gridviz.BackgroundLayer(gridviz_eurostat.giscoBackgroundLayer("OSMPositronBackground", 18, "EPSG3035"))
+
+    //add layer to map
+    map.layers = [backgroundLayer]
+    map.redraw()
+
+</script>

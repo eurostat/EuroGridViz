@@ -3,6 +3,7 @@ import { Button } from './Button.js'
 /**
  * Button for toggling fullscreen mode
  *
+ * @module button
  * @author Joseph Davies, Julien Gaffuri
  */
 export class FullscreenButton extends Button {
@@ -43,9 +44,9 @@ export class FullscreenButton extends Button {
         </svg>
         `
 
-        //save initial app dimensions
-        this.defaultHeight = this.app.h
-        this.defaultWidth = this.app.w
+        //save initial map dimensions
+        this.defaultHeight = this.map.h
+        this.defaultWidth = this.map.w
 
         // event handler
         this.div.on('click', (e) => {
@@ -73,21 +74,21 @@ export class FullscreenButton extends Button {
 
     onClickFunction(e) {
         if (this.isFullscreen) {
-            this.closeFullscreen(this.app.container)
+            this.closeFullscreen(this.map.container)
             //resize canvas to default
-            this.app.h = this.defaultHeight
-            this.app.w = this.defaultWidth
-            this.app.cg.h = this.defaultHeight
-            this.app.cg.w = this.defaultWidth
-            this.app.cg.canvas.setAttribute('width', '' + this.defaultWidth)
-            this.app.cg.canvas.setAttribute('height', '' + this.defaultHeight)
-            this.app.redraw()
+            this.map.h = this.defaultHeight
+            this.map.w = this.defaultWidth
+            this.map.geoCanvas.h = this.defaultHeight
+            this.map.geoCanvas.w = this.defaultWidth
+            this.map.geoCanvas.canvas.setAttribute('width', '' + this.defaultWidth)
+            this.map.geoCanvas.canvas.setAttribute('height', '' + this.defaultHeight)
+            this.map.redraw()
             this.isFullscreen = false
         } else {
-            this.openFullscreen(this.app.container)
+            this.openFullscreen(this.map.container)
             //resize canvas to fullscreen
-            this.app.h = window.screen.height
-            this.app.w = window.screen.width
+            this.map.h = window.screen.height
+            this.map.w = window.screen.width
             this.isFullscreen = true
         }
     }

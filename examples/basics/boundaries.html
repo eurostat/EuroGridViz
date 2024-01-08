@@ -1,0 +1,55 @@
+<div id="map" style="height: 500px; width: 800px"></div>
+
+<script src="../../dist/gridviz.js"></script>
+<script>
+
+    //define map with initial view
+    const map = new gridviz.Map(document.getElementById('map'), { x: 4500000, y: 2900000, z: 1000 })
+        .addZoomButtons()
+
+    //make boundary layer, with a different style depending on the zoom level and line type.
+    const boundaryLayer = new gridviz.GeoJSONLayer({
+        url: 'https://raw.githubusercontent.com/eurostat/Nuts2json/master/pub/v2/2021/3035/03M/nutsbn_3.json',
+        color: (f, zoom) => {
+            const p = f.properties
+            if (p.co === 'T') return '#888'
+            if (zoom < 400) return '#888'
+            else if (zoom < 1000) return p.lvl >= 3 ? '' : '#888'
+            else if (zoom < 2000) return p.lvl >= 2 ? '' : '#888'
+            else return p.lvl >= 1 ? '' : '#888'
+        },
+        width: (f, zoom) => {
+            const p = f.properties
+            if (p.co === 'T') return 0.5
+            if (zoom < 400) return p.lvl == 3 ? 2.2 : p.lvl == 2 ? 2.2 : p.lvl == 1 ? 2.2 : 4
+            else if (zoom < 1000) return p.lvl == 2 ? 1.8 : p.lvl == 1 ? 1.8 : 2.5
+            else if (zoom < 2000) return p.lvl == 1 ? 1.8 : 2.5
+            else return 1.2
+        },
+        lineDash: (f, zoom) => {
+            const p = f.properties
+            if (p.co === 'T') return []
+            if (zoom < 400)
+                return p.lvl == 3
+                    ? [2 * zoom, 2 * zoom]
+                    : p.lvl == 2
+                        ? [5 * zoom, 2 * zoom]
+                        : p.lvl == 1
+                            ? [5 * zoom, 2 * zoom]
+                            : [10 * zoom, 3 * zoom]
+            else if (zoom < 1000)
+                return p.lvl == 2
+                    ? [5 * zoom, 2 * zoom]
+                    : p.lvl == 1
+                        ? [5 * zoom, 2 * zoom]
+                        : [10 * zoom, 3 * zoom]
+            else if (zoom < 2000) return p.lvl == 1 ? [5 * zoom, 2 * zoom] : [10 * zoom, 3 * zoom]
+            else return [10 * zoom, 3 * zoom]
+        },
+    })
+
+    //add layer to map
+    map.layers = [boundaryLayer]
+    map.redraw()
+
+</script>
